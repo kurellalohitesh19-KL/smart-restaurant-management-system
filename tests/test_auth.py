@@ -103,6 +103,16 @@ class AuthTestCase(unittest.TestCase):
         self._login_as('customer')
         response = self.client.get('/dashboard')
         self.assertEqual(response.status_code, 200)
+        
+        # Ensure customer cannot access owner routes
+        response = self.client.get('/owner/dashboard')
+        self.assertEqual(response.status_code, 403)
+        
+        # Ensure customer cannot access staff routes
+        response = self.client.get('/staff/dashboard')
+        self.assertEqual(response.status_code, 403)
+        
+        # Ensure customer cannot access super-admin routes
         response = self.client.get('/admin/dashboard')
         self.assertEqual(response.status_code, 403)
 
