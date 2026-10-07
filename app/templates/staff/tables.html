@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Tables - Staff{% endblock %}
+
+{% block content %}
+<div class="staff-container">
+    <h2>Tables for {{ restaurant.name }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Table Number</th>
+                <th>Capacity</th>
+                <th>Current Status</th>
+                <th>Update Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for table in tables %}
+            <tr>
+                <td>{{ table.table_number }}</td>
+                <td>{{ table.capacity }}</td>
+                <td>{{ table.status|capitalize }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('staff.update_table_status', table_id=table.id) }}">
+                        <select name="status">
+                            <option value="available" {% if table.status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="occupied" {% if table.status == 'occupied' %}selected{% endif %}>Occupied</option>
+                            <option value="maintenance" {% if table.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                        </select>
+                        <button type="submit">Update</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No tables found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('staff.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

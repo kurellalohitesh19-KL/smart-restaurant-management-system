@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Table Form - Owner{% endblock %}
+
+{% block content %}
+<div class="owner-container">
+    <h2>{{ 'Edit Table' if table else 'Add New Table' }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('owner.edit_table', table_id=table.id) if table else url_for('owner.create_table') }}">
+        <div>
+            <label>Table Number/Name</label>
+            <input type="text" name="table_number" value="{{ table.table_number if table else '' }}" required>
+        </div>
+        <div>
+            <label>Capacity</label>
+            <input type="number" name="capacity" min="1" value="{{ table.capacity if table else '' }}" required>
+        </div>
+        <div>
+            <label>Status</label>
+            <select name="status" required>
+                <option value="available" {% if table and table.status == 'available' %}selected{% endif %}>Available</option>
+                <option value="reserved" {% if table and table.status == 'reserved' %}selected{% endif %}>Reserved</option>
+                <option value="occupied" {% if table and table.status == 'occupied' %}selected{% endif %}>Occupied</option>
+                <option value="maintenance" {% if table and table.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+            </select>
+        </div>
+        
+        <button type="submit">Save Table</button>
+    </form>
+    <a href="{{ url_for('owner.list_tables') }}">Back to Tables</a>
+</div>
+{% endblock %}

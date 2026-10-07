@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.utils import role_required
 from app import db
 from app.models.restaurant import Restaurant, RestaurantStaff
+from app.models.table import Table
 from app.models.user import User
 
 owner_bp = Blueprint('owner', __name__)
@@ -177,3 +178,133 @@ def toggle_staff(staff_id):
     status = "activated" if staff.is_active else "deactivated"
     flash(f"Staff account {status} successfully.", "success")
     return redirect(url_for('owner.list_staff'))
+
+# --- Table Management ---
+
+@owner_bp.route('/tables')
+@role_required('restaurant_owner')
+def list_tables():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage tables.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    tables = Table.query.filter_by(restaurant_id=restaurant.id).all()
+    return render_template('owner/tables.html', tables=tables, restaurant=restaurant)
+
+@owner_bp.route('/tables/create', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def create_table():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage tables.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    if request.method == 'POST':
+        table_number = request.form.get('table_number')
+        capacity = request.form.get('capacity')
+        status = request.form.get('status')
+        
+        if not table_number or not capacity:
+            flash("Table number and capacity are required.", "danger")
+            return redirect(url_for('owner.create_table'))
+            
+        try:
+            capacity = int(capacity)
+            if capacity <= 0:
+                raise ValueError
+        except ValueError:
+            flash("Capacity must be a positive integer.", "danger")
+            return redirect(url_for('owner.create_table'))
+            
+        valid_statuses = ['available', 'reserved', 'occupied', 'maintenance']
+        if status not in valid_statuses:
+            flash("Invalid status selected.", "danger")
+            return redirect(url_for('owner.create_table'))
+            
+        existing = Table.query.filter_by(restaurant_id=restaurant.id, table_number=table_number).first()
+        if existing:
+            flash("Table number already exists in your restaurant.", "danger")
+            return redirect(url_for('owner.create_table'))
+            
+        new_table = Table(
+            restaurant_id=restaurant.id,
+            table_number=table_number,
+            capacity=capacity,
+            status=status
+        )
+        db.session.add(new_table)
+        db.session.commit()
+        
+        flash("Table created successfully.", "success")
+        return redirect(url_for('owner.list_tables'))
+        
+    return render_template('owner/table_form.html', table=None)
+
+@owner_bp.route('/tables/<int:table_id>/edit', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def edit_table(table_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    table = Table.query.filter_by(id=table_id, restaurant_id=restaurant.id).first_or_404()
+    
+    if request.method == 'POST':
+        table_number = request.form.get('table_number')
+        capacity = request.form.get('capacity')
+        status = request.form.get('status')
+        
+        if not table_number or not capacity:
+            flash("Table number and capacity are required.", "danger")
+            return redirect(url_for('owner.edit_table', table_id=table.id))
+            
+        try:
+            capacity = int(capacity)
+            if capacity <= 0:
+                raise ValueError
+        except ValueError:
+            flash("Capacity must be a positive integer.", "danger")
+            return redirect(url_for('owner.edit_table', table_id=table.id))
+            
+        valid_statuses = ['available', 'reserved', 'occupied', 'maintenance']
+        if status not in valid_statuses:
+            flash("Invalid status selected.", "danger")
+            return redirect(url_for('owner.edit_table', table_id=table.id))
+            
+        if table_number != table.table_number:
+            existing = Table.query.filter_by(restaurant_id=restaurant.id, table_number=table_number).first()
+            if existing:
+                flash("Table number already exists in your restaurant.", "danger")
+                return redirect(url_for('owner.edit_table', table_id=table.id))
+                
+        table.table_number = table_number
+        table.capacity = capacity
+        table.status = status
+        db.session.commit()
+        
+        flash("Table updated successfully.", "success")
+        return redirect(url_for('owner.list_tables'))
+        
+    return render_template('owner/table_form.html', table=table)
+
+@owner_bp.route('/tables/<int:table_id>/delete', methods=['POST'])
+@role_required('restaurant_owner')
+def delete_table(table_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    table = Table.query.filter_by(id=table_id, restaurant_id=restaurant.id).first_or_404()
+    
+    # Check dependencies (active reservations/orders)
+    # Using basic checks on the relationships since we don't have reservation logic fully implemented yet.
+    # If the table has ANY reservations or orders associated, block deletion for safety (as requested).
+    if getattr(table, 'reservations', None) or getattr(table, 'orders', None):
+        flash("Cannot delete table: active reservations or orders exist.", "danger")
+        return redirect(url_for('owner.list_tables'))
+        
+    db.session.delete(table)
+    db.session.commit()
+    flash("Table deleted successfully.", "success")
+    return redirect(url_for('owner.list_tables'))
