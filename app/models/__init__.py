@@ -1,9 +1,23 @@
 """
 Smart Restaurant Management System - Database Models Package.
-
-Models will be added in later phases:
-- User (Phase 2)
-- Restaurant (Phase 3)
-- Table, Reservation (Phase 4)
-- MenuCategory, MenuItem, Order, OrderItem (Phase 5)
 """
+
+from app.models.user import User
+from app.models.restaurant import Restaurant, RestaurantStaff, CustomerRestaurant
+from app.models.table import Table
+from app.models.menu import MenuCategory, MenuItem
+from app.models.reservation import Reservation
+from app.models.order import Order, OrderItem
+
+__all__ = [
+    'User',
+    'Restaurant',
+    'RestaurantStaff',
+    'CustomerRestaurant',
+    'Table',
+    'MenuCategory',
+    'MenuItem',
+    'Reservation',
+    'Order',
+    'OrderItem'
+]
