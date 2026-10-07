@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="staff-container">
+    <h2>Staff Dashboard</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div>
+        <p><strong>Name:</strong> {{ current_user.name }}</p>
+        <p><strong>Restaurant:</strong> {{ restaurant.name }}</p>
+        <p><strong>Designation:</strong> {{ staff_record.designation }}</p>
+        <p><strong>Status:</strong> <span style="color: {{ 'green' if staff_record.is_active else 'red' }}">{{ 'Active' if staff_record.is_active else 'Inactive' }}</span></p>
+    </div>
+</div>
+{% endblock %}

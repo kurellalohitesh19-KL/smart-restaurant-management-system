@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Form - Owner{% endblock %}
+
+{% block content %}
+<div class="owner-container">
+    <h2>{{ 'Edit Staff Member' if staff else 'Add New Staff Member' }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('owner.edit_staff', staff_id=staff.id) if staff else url_for('owner.create_staff') }}">
+        <div>
+            <label>Full Name</label>
+            <input type="text" name="name" value="{{ user.name if user else '' }}" required>
+        </div>
+        <div>
+            <label>Email</label>
+            <input type="email" name="email" value="{{ user.email if user else '' }}" required>
+        </div>
+        <div>
+            <label>Phone</label>
+            <input type="tel" name="phone" value="{{ user.phone if user else '' }}">
+        </div>
+        
+        {% if not staff %}
+        <div>
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+        {% endif %}
+        
+        <div>
+            <label>Designation (e.g. Waiter, Manager)</label>
+            <input type="text" name="designation" value="{{ staff.designation if staff else '' }}">
+        </div>
+        
+        <button type="submit">Save Staff Member</button>
+    </form>
+    <a href="{{ url_for('owner.list_staff') }}">Back to Staff List</a>
+</div>
+{% endblock %}

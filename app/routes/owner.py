@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.utils import role_required
 from app import db
-from app.models.restaurant import Restaurant
+from app.models.restaurant import Restaurant, RestaurantStaff
+from app.models.user import User
 
 owner_bp = Blueprint('owner', __name__)
 
@@ -52,16 +53,127 @@ def edit_restaurant():
 @owner_bp.route('/restaurants/<int:restaurant_id>')
 @role_required('restaurant_owner')
 def view_restaurant_by_id(restaurant_id):
-    # Enforces explicit data isolation rule
     restaurant = Restaurant.query.filter_by(id=restaurant_id, owner_id=current_user.id).first_or_404()
     return render_template('owner/restaurant.html', restaurant=restaurant)
 
 @owner_bp.route('/restaurants/<int:restaurant_id>/edit', methods=['GET', 'POST'])
 @role_required('restaurant_owner')
 def edit_restaurant_by_id(restaurant_id):
-    # Enforces explicit data isolation rule
     restaurant = Restaurant.query.filter_by(id=restaurant_id, owner_id=current_user.id).first_or_404()
     if request.method == 'POST':
-        # Delegate to standard edit logic conceptually, or handle it here
         pass
     return render_template('owner/restaurant_form.html', restaurant=restaurant)
+
+# --- Staff Management ---
+
+def get_owner_restaurant():
+    return Restaurant.query.filter_by(owner_id=current_user.id).first()
+
+@owner_bp.route('/staff')
+@role_required('restaurant_owner')
+def list_staff():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage staff.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    staff_members = RestaurantStaff.query.filter_by(restaurant_id=restaurant.id).all()
+    return render_template('owner/staff.html', staff_members=staff_members, restaurant=restaurant)
+
+@owner_bp.route('/staff/create', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def create_staff():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage staff.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        password = request.form.get('password')
+        designation = request.form.get('designation')
+        
+        if not name or not email or not password:
+            flash("Name, email, and password are required.", "danger")
+            return redirect(url_for('owner.create_staff'))
+            
+        if User.query.filter_by(email=email).first():
+            flash("Email is already registered.", "danger")
+            return redirect(url_for('owner.create_staff'))
+            
+        new_user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            role='restaurant_staff'
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.flush() # get ID
+        
+        new_staff = RestaurantStaff(
+            user_id=new_user.id,
+            restaurant_id=restaurant.id,
+            designation=designation,
+            is_active=True
+        )
+        db.session.add(new_staff)
+        db.session.commit()
+        
+        flash("Staff account created successfully.", "success")
+        return redirect(url_for('owner.list_staff'))
+        
+    return render_template('owner/staff_form.html', staff=None)
+
+@owner_bp.route('/staff/<int:staff_id>/edit', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def edit_staff(staff_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    staff = RestaurantStaff.query.filter_by(id=staff_id, restaurant_id=restaurant.id).first_or_404()
+    user = User.query.get(staff.user_id)
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        designation = request.form.get('designation')
+        
+        if not name or not email:
+            flash("Name and email are required.", "danger")
+            return redirect(url_for('owner.edit_staff', staff_id=staff.id))
+            
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user and existing_user.id != user.id:
+            flash("Email is already registered by another user.", "danger")
+            return redirect(url_for('owner.edit_staff', staff_id=staff.id))
+            
+        user.name = name
+        user.email = email
+        user.phone = phone
+        staff.designation = designation
+        
+        db.session.commit()
+        flash("Staff account updated successfully.", "success")
+        return redirect(url_for('owner.list_staff'))
+        
+    return render_template('owner/staff_form.html', staff=staff, user=user)
+
+@owner_bp.route('/staff/<int:staff_id>/toggle', methods=['POST'])
+@role_required('restaurant_owner')
+def toggle_staff(staff_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    staff = RestaurantStaff.query.filter_by(id=staff_id, restaurant_id=restaurant.id).first_or_404()
+    staff.is_active = not staff.is_active
+    db.session.commit()
+    
+    status = "activated" if staff.is_active else "deactivated"
+    flash(f"Staff account {status} successfully.", "success")
+    return redirect(url_for('owner.list_staff'))
