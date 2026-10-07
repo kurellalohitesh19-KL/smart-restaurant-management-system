@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Restaurant{% endblock %}
+
+{% block content %}
+<div class="owner-container">
+    <h2>Edit Restaurant</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('owner.edit_restaurant') }}">
+        <div>
+            <label>Name</label>
+            <input type="text" name="name" value="{{ restaurant.name }}" required>
+        </div>
+        <div>
+            <label>Description</label>
+            <textarea name="description">{{ restaurant.description }}</textarea>
+        </div>
+        <div>
+            <label>City</label>
+            <input type="text" name="city" value="{{ restaurant.city }}">
+        </div>
+        <div>
+            <label>State</label>
+            <input type="text" name="state" value="{{ restaurant.state }}">
+        </div>
+        <!-- Owners cannot modify active status or owner assignment -->
+        <button type="submit">Save Changes</button>
+    </form>
+    <a href="{{ url_for('owner.view_restaurant') }}">Back to Restaurant</a>
+</div>
+{% endblock %}

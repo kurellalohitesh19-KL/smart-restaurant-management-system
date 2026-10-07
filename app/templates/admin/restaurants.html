@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Restaurants - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>All Restaurants</h2>
+    <a href="{{ url_for('admin.create_restaurant') }}">Create New Restaurant</a>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Owner ID</th>
+                <th>City</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in restaurants %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.owner_id }}</td>
+                <td>{{ r.city }}</td>
+                <td>{{ 'Active' if r.is_active else 'Inactive' }}</td>
+                <td>
+                    <a href="{{ url_for('admin.view_restaurant', restaurant_id=r.id) }}">View</a> |
+                    <a href="{{ url_for('admin.edit_restaurant', restaurant_id=r.id) }}">Edit</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No restaurants found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
