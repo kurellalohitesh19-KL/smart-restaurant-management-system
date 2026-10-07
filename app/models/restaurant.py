@@ -59,7 +59,7 @@ class RestaurantStaff(db.Model):
 
 
 class CustomerRestaurant(db.Model):
-    __tablename__ = 'customer_restaurant'
+    __tablename__ = 'customer_restaurants'
     
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
