@@ -4,6 +4,7 @@ from app.utils import role_required
 from app import db
 from app.models.restaurant import RestaurantStaff
 from app.models.table import Table
+from app.models.menu import MenuCategory, MenuItem
 
 staff_bp = Blueprint('staff', __name__)
 
@@ -52,3 +53,15 @@ def update_table_status(table_id):
     db.session.commit()
     flash("Table status updated successfully.", "success")
     return redirect(url_for('staff.list_tables'))
+
+# --- Menu Management ---
+
+@staff_bp.route('/menu')
+@role_required('restaurant_staff')
+def view_menu():
+    staff_record = RestaurantStaff.query.filter_by(user_id=current_user.id).first()
+    if not staff_record:
+        abort(403)
+        
+    categories = MenuCategory.query.filter_by(restaurant_id=staff_record.restaurant_id).all()
+    return render_template('staff/menu.html', categories=categories, restaurant=staff_record.restaurant)

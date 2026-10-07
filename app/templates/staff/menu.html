@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Menu - Staff{% endblock %}
+
+{% block content %}
+<div class="staff-container">
+    <h2>Menu for {{ restaurant.name }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% for category in categories %}
+    <div class="category-block" style="border: 1px solid #ccc; margin-bottom: 20px; padding: 10px;">
+        <h3>{{ category.name }}</h3>
+        
+        <table style="width: 100%; margin-top: 10px;">
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Price</th>
+                    <th>Availability</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in category.items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>${{ item.price }}</td>
+                    <td>{{ 'Available' if item.is_available else 'Unavailable' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3">No items in this category.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No menu categories found.</p>
+    {% endfor %}
+
+    <a href="{{ url_for('staff.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from app.utils import role_required
 from app import db
 from app.models.restaurant import Restaurant, RestaurantStaff
 from app.models.table import Table
+from app.models.menu import MenuCategory, MenuItem
 from app.models.user import User
 
 owner_bp = Blueprint('owner', __name__)
@@ -308,3 +309,201 @@ def delete_table(table_id):
     db.session.commit()
     flash("Table deleted successfully.", "success")
     return redirect(url_for('owner.list_tables'))
+
+# --- Menu Management ---
+
+@owner_bp.route('/menu')
+@role_required('restaurant_owner')
+def view_menu():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage the menu.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    categories = MenuCategory.query.filter_by(restaurant_id=restaurant.id).all()
+    # The template can access category.items if the relationship is set, 
+    # but let's fetch items directly if needed, or rely on relationship.
+    # MenuCategory has `items = db.relationship('MenuItem', backref='category', lazy=True)`
+    return render_template('owner/menu.html', categories=categories, restaurant=restaurant)
+
+@owner_bp.route('/menu/categories/create', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def create_category():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        is_active = request.form.get('is_active') == 'on'
+        
+        if not name:
+            flash("Category name is required.", "danger")
+            return redirect(url_for('owner.create_category'))
+            
+        category = MenuCategory(
+            restaurant_id=restaurant.id,
+            name=name,
+            description=description,
+            is_active=is_active
+        )
+        db.session.add(category)
+        db.session.commit()
+        flash("Category created successfully.", "success")
+        return redirect(url_for('owner.view_menu'))
+        
+    return render_template('owner/category_form.html', category=None)
+
+@owner_bp.route('/menu/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def edit_category(category_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    category = MenuCategory.query.filter_by(id=category_id, restaurant_id=restaurant.id).first_or_404()
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        if not name:
+            flash("Category name is required.", "danger")
+            return redirect(url_for('owner.edit_category', category_id=category.id))
+            
+        category.name = name
+        category.description = request.form.get('description')
+        category.is_active = request.form.get('is_active') == 'on'
+        db.session.commit()
+        flash("Category updated successfully.", "success")
+        return redirect(url_for('owner.view_menu'))
+        
+    return render_template('owner/category_form.html', category=category)
+
+@owner_bp.route('/menu/categories/<int:category_id>/delete', methods=['POST'])
+@role_required('restaurant_owner')
+def delete_category(category_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    category = MenuCategory.query.filter_by(id=category_id, restaurant_id=restaurant.id).first_or_404()
+    
+    if category.items:
+        flash("Cannot delete category with existing menu items.", "danger")
+        return redirect(url_for('owner.view_menu'))
+        
+    db.session.delete(category)
+    db.session.commit()
+    flash("Category deleted successfully.", "success")
+    return redirect(url_for('owner.view_menu'))
+
+@owner_bp.route('/menu/items/create', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def create_menu_item():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    categories = MenuCategory.query.filter_by(restaurant_id=restaurant.id).all()
+    if not categories:
+        flash("Please create a category first.", "warning")
+        return redirect(url_for('owner.create_category'))
+        
+    if request.method == 'POST':
+        name = request.form.get('name')
+        category_id = request.form.get('category_id')
+        price = request.form.get('price')
+        
+        if not name or not category_id or not price:
+            flash("Name, category, and price are required.", "danger")
+            return redirect(url_for('owner.create_menu_item'))
+            
+        category = MenuCategory.query.filter_by(id=category_id, restaurant_id=restaurant.id).first()
+        if not category:
+            flash("Invalid category selected.", "danger")
+            return redirect(url_for('owner.create_menu_item'))
+            
+        try:
+            price = float(price)
+            if price < 0:
+                raise ValueError
+        except ValueError:
+            flash("Price must be a valid number greater than or equal to zero.", "danger")
+            return redirect(url_for('owner.create_menu_item'))
+            
+        item = MenuItem(
+            restaurant_id=restaurant.id,
+            category_id=category.id,
+            name=name,
+            description=request.form.get('description'),
+            price=price,
+            is_available=request.form.get('is_available') == 'on'
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash("Menu item created successfully.", "success")
+        return redirect(url_for('owner.view_menu'))
+        
+    return render_template('owner/menu_item_form.html', item=None, categories=categories)
+
+@owner_bp.route('/menu/items/<int:item_id>/edit', methods=['GET', 'POST'])
+@role_required('restaurant_owner')
+def edit_menu_item(item_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    item = MenuItem.query.filter_by(id=item_id, restaurant_id=restaurant.id).first_or_404()
+    categories = MenuCategory.query.filter_by(restaurant_id=restaurant.id).all()
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        category_id = request.form.get('category_id')
+        price = request.form.get('price')
+        
+        if not name or not category_id or not price:
+            flash("Name, category, and price are required.", "danger")
+            return redirect(url_for('owner.edit_menu_item', item_id=item.id))
+            
+        category = MenuCategory.query.filter_by(id=category_id, restaurant_id=restaurant.id).first()
+        if not category:
+            flash("Invalid category selected.", "danger")
+            return redirect(url_for('owner.edit_menu_item', item_id=item.id))
+            
+        try:
+            price = float(price)
+            if price < 0:
+                raise ValueError
+        except ValueError:
+            flash("Price must be a valid number greater than or equal to zero.", "danger")
+            return redirect(url_for('owner.edit_menu_item', item_id=item.id))
+            
+        item.name = name
+        item.category_id = category.id
+        item.price = price
+        item.description = request.form.get('description')
+        item.is_available = request.form.get('is_available') == 'on'
+        
+        db.session.commit()
+        flash("Menu item updated successfully.", "success")
+        return redirect(url_for('owner.view_menu'))
+        
+    return render_template('owner/menu_item_form.html', item=item, categories=categories)
+
+@owner_bp.route('/menu/items/<int:item_id>/delete', methods=['POST'])
+@role_required('restaurant_owner')
+def delete_menu_item(item_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    item = MenuItem.query.filter_by(id=item_id, restaurant_id=restaurant.id).first_or_404()
+    
+    if getattr(item, 'order_items', None):
+        flash("Cannot delete menu item with associated orders.", "danger")
+        return redirect(url_for('owner.view_menu'))
+        
+    db.session.delete(item)
+    db.session.commit()
+    flash("Menu item deleted successfully.", "success")
+    return redirect(url_for('owner.view_menu'))

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Menu Category Form - Owner{% endblock %}
+
+{% block content %}
+<div class="owner-container">
+    <h2>{{ 'Edit Category' if category else 'Add New Category' }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for cat, message in messages %}
+          <li class="{{ cat }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('owner.edit_category', category_id=category.id) if category else url_for('owner.create_category') }}">
+        <div>
+            <label>Category Name</label>
+            <input type="text" name="name" value="{{ category.name if category else '' }}" required>
+        </div>
+        <div>
+            <label>Description</label>
+            <textarea name="description">{{ category.description if category else '' }}</textarea>
+        </div>
+        <div>
+            <label>
+                <input type="checkbox" name="is_active" {% if not category or category.is_active %}checked{% endif %}>
+                Active
+            </label>
+        </div>
+        
+        <button type="submit">Save Category</button>
+    </form>
+    <a href="{{ url_for('owner.view_menu') }}">Back to Menu</a>
+</div>
+{% endblock %}
