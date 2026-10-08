@@ -23,6 +23,9 @@
         <p id="location-status" style="margin-top: 10px; font-weight: bold;"></p>
     </div>
 
+    <!-- Map Container -->
+    <div id="map" style="height: 400px; width: 100%; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 20px;"></div>
+
     <div class="restaurant-list" id="restaurant-list">
         {% for r in restaurants %}
         <div class="restaurant-card" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">
@@ -39,7 +42,41 @@
     <a href="{{ url_for('customer.dashboard') }}">Back to Dashboard</a>
 </div>
 
+{% if config.GOOGLE_MAPS_API_KEY %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}"></script>
+{% endif %}
+
 <script>
+let map;
+let markers = [];
+let customerMarker;
+let infoWindow;
+
+function initMap() {
+    if (typeof google === 'undefined') return;
+    
+    const defaultCenter = { 
+        lat: {{ config.TRICHY_LAT | default(10.7905) }}, 
+        lng: {{ config.TRICHY_LNG | default(78.7047) }} 
+    };
+    
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: defaultCenter,
+    });
+    infoWindow = new google.maps.InfoWindow();
+}
+
+function clearMarkers() {
+    for (let i = 0; i < markers.length; i++) {
+        markers[i].setMap(null);
+    }
+    markers = [];
+}
+
+// Initialize the map on load
+window.onload = initMap;
+
 document.getElementById('btn-location').addEventListener('click', function() {
     const statusMsg = document.getElementById('location-status');
     const radius = document.getElementById('radius').value || 10;
@@ -58,6 +95,23 @@ document.getElementById('btn-location').addEventListener('click', function() {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
+            // Update map center and customer marker
+            if (map) {
+                const customerPos = { lat: lat, lng: lng };
+                map.setCenter(customerPos);
+                
+                if (customerMarker) {
+                    customerMarker.setPosition(customerPos);
+                } else {
+                    customerMarker = new google.maps.Marker({
+                        position: customerPos,
+                        map: map,
+                        title: "You are here",
+                        icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    });
+                }
+            }
+            
             fetch(`/api/restaurants/nearby?latitude=${lat}&longitude=${lng}&radius=${radius}`)
                 .then(response => response.json())
                 .then(data => {
@@ -71,6 +125,8 @@ document.getElementById('btn-location').addEventListener('click', function() {
                     const listDiv = document.getElementById('restaurant-list');
                     listDiv.innerHTML = ''; // clear current list
                     
+                    if (map) clearMarkers();
+                    
                     if (restaurants.length === 0) {
                         statusMsg.textContent = "No restaurants found within this radius.";
                         statusMsg.style.color = "orange";
@@ -79,11 +135,11 @@ document.getElementById('btn-location').addEventListener('click', function() {
                         statusMsg.style.color = "green";
                         
                         restaurants.forEach(r => {
+                            // Update List
                             const card = document.createElement('div');
                             card.className = 'restaurant-card';
                             card.style.cssText = 'border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-left: 5px solid #28a745;';
                             
-                            // Use Flask url routing logic translated to JS manually
                             const detailUrl = `/customer/restaurants/${r.id}`;
                             
                             card.innerHTML = `
@@ -93,7 +149,41 @@ document.getElementById('btn-location').addEventListener('click', function() {
                                 <p><strong>Address:</strong> ${r.address}</p>
                             `;
                             listDiv.appendChild(card);
+                            
+                            // Update Map
+                            if (map && r.latitude && r.longitude) {
+                                const pos = { lat: parseFloat(r.latitude), lng: parseFloat(r.longitude) };
+                                const marker = new google.maps.Marker({
+                                    position: pos,
+                                    map: map,
+                                    title: r.name,
+                                    icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                                });
+                                
+                                marker.addListener('click', () => {
+                                    const contentString = `
+                                        <div>
+                                            <h4>${r.name}</h4>
+                                            <p>${r.address || ''}<br>${r.city || ''}</p>
+                                            <p><strong>Distance:</strong> ${r.distance} km</p>
+                                            <a href="${detailUrl}" class="btn btn-sm btn-primary">View Restaurant</a>
+                                        </div>
+                                    `;
+                                    infoWindow.setContent(contentString);
+                                    infoWindow.open(map, marker);
+                                });
+                                
+                                markers.push(marker);
+                            }
                         });
+                        
+                        // Fit bounds to include customer and all markers
+                        if (map && markers.length > 0) {
+                            const bounds = new google.maps.LatLngBounds();
+                            bounds.extend(customerMarker.getPosition());
+                            markers.forEach(m => bounds.extend(m.getPosition()));
+                            map.fitBounds(bounds);
+                        }
                     }
                 })
                 .catch(error => {

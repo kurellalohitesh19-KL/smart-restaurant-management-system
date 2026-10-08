@@ -39,6 +39,9 @@ class Config:
     # Trichy Location (Default)
     TRICHY_LAT = float(os.environ.get('TRICHY_LAT', '10.7905'))
     TRICHY_LNG = float(os.environ.get('TRICHY_LNG', '78.7047'))
+    
+    # External APIs
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
 
 
 class DevelopmentConfig(Config):
