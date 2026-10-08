@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Available Tables - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="customer-container">
+    <h2>Available Tables at {{ restaurant.name }}</h2>
+    
+    <ul>
+        {% for table in tables %}
+        <li>Table {{ table.table_number }} (Capacity: {{ table.capacity }})</li>
+        {% else %}
+        <li>No tables are currently available.</li>
+        {% endfor %}
+    </ul>
+    
+    <br>
+    <a href="{{ url_for('customer.restaurant_detail', restaurant_id=restaurant.id) }}">Back to Restaurant Info</a>
+</div>
+{% endblock %}

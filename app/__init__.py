@@ -52,7 +52,7 @@ def create_app(config_name='development'):
     from app.routes.api import api_bp
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(customer_bp)
+    app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(owner_bp, url_prefix='/owner')
     app.register_blueprint(staff_bp, url_prefix='/staff')
     app.register_blueprint(admin_bp, url_prefix='/admin')

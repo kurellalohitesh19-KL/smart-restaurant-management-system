@@ -68,7 +68,7 @@ class AuthTestCase(unittest.TestCase):
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         # Assuming redirect_based_on_role for customer goes to home
-        self.assertIn(b'Customer Area', response.data)
+        self.assertIn(b'Customer Dashboard', response.data)
 
     def test_failed_login(self):
         response = self.client.post('/auth/login', data={
@@ -88,7 +88,7 @@ class AuthTestCase(unittest.TestCase):
         self.assertIn(b'You have been logged out', response.data)
 
     def test_unauthenticated_access_redirect(self):
-        response = self.client.get('/dashboard', follow_redirects=True)
+        response = self.client.get('/customer/dashboard', follow_redirects=True)
         self.assertIn(b'Please log in to access this page', response.data)
 
     def _login_as(self, role):
@@ -101,7 +101,7 @@ class AuthTestCase(unittest.TestCase):
 
     def test_customer_role_protection(self):
         self._login_as('customer')
-        response = self.client.get('/dashboard')
+        response = self.client.get('/customer/dashboard')
         self.assertEqual(response.status_code, 200)
         
         # Ensure customer cannot access owner routes

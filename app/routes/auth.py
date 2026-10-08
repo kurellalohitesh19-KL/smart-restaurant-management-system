@@ -91,7 +91,7 @@ def logout():
 
 def redirect_based_on_role(role):
     if role == 'customer':
-        return redirect(url_for('customer.home'))
+        return redirect(url_for('customer.dashboard'))
     elif role == 'restaurant_owner':
         return redirect(url_for('owner.dashboard'))
     elif role == 'restaurant_staff':

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Dashboard{% endblock %}
+
+{% block content %}
+<div class="customer-container">
+    <h2>Customer Dashboard</h2>
+    <p>Welcome to Smart Restaurant!</p>
+    <ul>
+        <li><a href="{{ url_for('customer.list_restaurants') }}">Discover Restaurants</a></li>
+    </ul>
+</div>
+{% endblock %}
