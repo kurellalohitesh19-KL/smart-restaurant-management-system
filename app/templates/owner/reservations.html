@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Reservations - Owner{% endblock %}
+
+{% block content %}
+<div class="owner-container">
+    <h2>Reservations for {{ restaurant.name }}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for cat, message in messages %}
+          <li class="{{ cat }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #ccc; padding: 10px;">Customer</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Table</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Date & Time</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Guests</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Status</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.customer.name }} ({{ r.customer.email }})</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.table.table_number }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.reservation_date }}<br>{{ r.start_time.strftime('%H:%M') }} - {{ r.end_time.strftime('%H:%M') }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.number_of_guests }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.status|capitalize }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">
+                    {% if r.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('owner.confirm_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <button type="submit">Confirm</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel</button>
+                    </form>
+                    {% elif r.status == 'confirmed' %}
+                    <form method="POST" action="{{ url_for('owner.complete_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <button type="submit">Mark Completed</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="border: 1px solid #ccc; padding: 10px; text-align: center;">No reservations found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br>
+    <a href="{{ url_for('owner.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

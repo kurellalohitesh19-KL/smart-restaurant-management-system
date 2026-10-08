@@ -13,6 +13,7 @@ class Order(db.Model):
     
     # status: placed, confirmed, preparing, ready, served, cancelled
     status = db.Column(db.String(50), nullable=False, default='placed')
+    is_customer_confirmed = db.Column(db.Boolean, default=False)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
     
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

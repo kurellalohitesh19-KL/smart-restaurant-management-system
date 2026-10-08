@@ -26,9 +26,12 @@ class Config:
     DB_USER = os.environ.get('DB_USER', 'root')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
 
+    import urllib.parse
+    _encoded_password = urllib.parse.quote_plus(DB_PASSWORD)
+
     # SQLAlchemy
     SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
+        f"mysql+pymysql://{DB_USER}:{_encoded_password}"
         f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -51,6 +54,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
 
 # Configuration dictionary

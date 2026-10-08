@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation Details{% endblock %}
+
+{% block content %}
+<div class="customer-container">
+    <h2>Reservation Details</h2>
+    
+    <p><strong>Restaurant:</strong> {{ reservation.restaurant.name }}</p>
+    <p><strong>Table:</strong> {{ reservation.table.table_number }}</p>
+    <p><strong>Date:</strong> {{ reservation.reservation_date }}</p>
+    <p><strong>Time:</strong> {{ reservation.start_time.strftime('%H:%M') }} to {{ reservation.end_time.strftime('%H:%M') }}</p>
+    <p><strong>Guests:</strong> {{ reservation.number_of_guests }}</p>
+    <p><strong>Status:</strong> {{ reservation.status|capitalize }}</p>
+    <p><strong>Created At:</strong> {{ reservation.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    
+    {% if reservation.status in ['pending', 'confirmed'] %}
+    <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=reservation.id) }}">
+        <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel Reservation</button>
+    </form>
+    {% endif %}
+    
+    <br>
+    <a href="{{ url_for('customer.list_reservations') }}">Back to Reservations</a>
+</div>
+{% endblock %}

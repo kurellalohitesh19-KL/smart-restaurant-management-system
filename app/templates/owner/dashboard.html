@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Owner Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Owner Dashboard</h2>
+    
+    {% if not restaurant %}
+        <div class="alert alert-warning mt-4">
+            No restaurant has been assigned to your account yet. Please contact Super Admin.
+        </div>
+    {% else %}
+        <div class="mb-4 mt-3">
+            <a href="{{ url_for('owner.view_restaurant') }}" class="btn btn-outline-primary mb-1">Manage Restaurant</a>
+            <a href="{{ url_for('owner.list_staff') }}" class="btn btn-outline-primary mb-1">Manage Staff</a>
+            <a href="{{ url_for('owner.list_tables') }}" class="btn btn-outline-primary mb-1">Manage Tables</a>
+            <a href="{{ url_for('owner.view_menu') }}" class="btn btn-outline-primary mb-1">Manage Menu</a>
+            <a href="{{ url_for('owner.list_reservations') }}" class="btn btn-outline-primary mb-1">View Reservations</a>
+            <a href="{{ url_for('owner.list_orders') }}" class="btn btn-outline-primary mb-1">View Orders</a>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white">
+                        <h4 class="mb-0">Restaurant Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> {{ restaurant.name }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge {{ 'bg-success' if restaurant.is_active else 'bg-danger' }}">
+                                {{ 'Active' if restaurant.is_active else 'Inactive' }}
+                            </span>
+                        </p>
+                        <p><strong>Address:</strong> {{ restaurant.address }}</p>
+                        <hr>
+                        <p><strong>Total Active Staff:</strong> {{ staff_count }}</p>
+                        <p><strong>Interacted Customers:</strong> {{ customer_count }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">Table Statistics</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Total Tables:</strong> {{ table_stats.total }}</p>
+                        <p><strong>Available:</strong> <span class="badge bg-success">{{ table_stats.available }}</span></p>
+                        <p><strong>Reserved:</strong> <span class="badge bg-warning text-dark">{{ table_stats.reserved }}</span></p>
+                        <p><strong>Occupied:</strong> <span class="badge bg-danger">{{ table_stats.occupied }}</span></p>
+                        <p><strong>Maintenance:</strong> <span class="badge bg-secondary">{{ table_stats.maintenance }}</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Reservation Statistics</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Today's Reservations:</strong> {{ res_stats.today }}</p>
+                        <p><strong>Pending:</strong> {{ res_stats.pending }}</p>
+                        <p><strong>Confirmed:</strong> {{ res_stats.confirmed }}</p>
+                        <p><strong>Completed:</strong> {{ res_stats.completed }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">Order Statistics</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Today's Orders:</strong> {{ order_stats.today }}</p>
+                        <p><strong>Pending (Placed):</strong> {{ order_stats.pending }}</p>
+                        <p><strong>Preparing:</strong> {{ order_stats.preparing }}</p>
+                        <p><strong>Ready:</strong> {{ order_stats.ready }}</p>
+                        <p><strong>Served:</strong> {{ order_stats.served }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}My Reservations{% endblock %}
+
+{% block content %}
+<div class="customer-container">
+    <h2>My Reservations</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for cat, message in messages %}
+          <li class="{{ cat }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #ccc; padding: 10px;">Restaurant</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Table</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Date</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Time</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Guests</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Status</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.restaurant.name }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.table.table_number }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.reservation_date }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.start_time.strftime('%H:%M') }} - {{ r.end_time.strftime('%H:%M') }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.number_of_guests }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">{{ r.status|capitalize }}</td>
+                <td style="border: 1px solid #ccc; padding: 10px;">
+                    <a href="{{ url_for('customer.reservation_detail', reservation_id=r.id) }}">View</a>
+                    {% if r.status in ['pending', 'confirmed'] %}
+                    | 
+                    <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="border: 1px solid #ccc; padding: 10px; text-align: center;">You have no reservations.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br>
+    <a href="{{ url_for('customer.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

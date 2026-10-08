@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Your Cart{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Cart</h2>
+    {% if session.get('cart') %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Subtotal</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_id, item in cart_items.items() %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>₹{{ item.price }}</td>
+                    <td>
+                        <form action="{{ url_for('customer.update_cart') }}" method="POST" class="d-inline">
+                            <input type="hidden" name="menu_item_id" value="{{ item_id }}">
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control d-inline w-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                        </form>
+                    </td>
+                    <td>₹{{ item.subtotal }}</td>
+                    <td>
+                        <form action="{{ url_for('customer.remove_from_cart') }}" method="POST" class="d-inline">
+                            <input type="hidden" name="menu_item_id" value="{{ item_id }}">
+                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <h4>Total: ₹{{ total_amount }}</h4>
+            <form action="{{ url_for('customer.place_order') }}" method="POST">
+                <button type="submit" class="btn btn-success btn-lg">Place Order</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Your cart is empty.</p>
+    {% endif %}
+</div>
+{% endblock %}

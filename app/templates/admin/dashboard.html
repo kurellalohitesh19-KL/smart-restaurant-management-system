@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Super Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Super Admin Dashboard</h2>
+    <p class="text-muted">Platform-wide Statistics</p>
+    
+    <div class="mb-4 mt-3">
+        <a href="{{ url_for('admin.list_restaurants') }}" class="btn btn-outline-primary mb-1">Manage Restaurants</a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Users</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Customers:</strong> {{ user_stats.customers }}</p>
+                    <p><strong>Restaurant Owners:</strong> {{ user_stats.owners }}</p>
+                    <p><strong>Restaurant Staff:</strong> {{ user_stats.staff }}</p>
+                    <p><strong>Super Admins:</strong> {{ user_stats.admins }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Restaurants</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Restaurants:</strong> {{ res_stats.total }}</p>
+                    <p><strong>Active:</strong> <span class="badge bg-success">{{ res_stats.active }}</span></p>
+                    <p><strong>Inactive:</strong> <span class="badge bg-danger">{{ res_stats.inactive }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">Tables</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total:</strong> {{ table_stats.total }}</p>
+                    <p><strong>Available:</strong> {{ table_stats.available }}</p>
+                    <p><strong>Reserved:</strong> {{ table_stats.reserved }}</p>
+                    <p><strong>Occupied:</strong> {{ table_stats.occupied }}</p>
+                    <p><strong>Maintenance:</strong> {{ table_stats.maintenance }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Reservations</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total:</strong> {{ reservation_stats.total }}</p>
+                    <p><strong>Pending:</strong> {{ reservation_stats.pending }}</p>
+                    <p><strong>Confirmed:</strong> {{ reservation_stats.confirmed }}</p>
+                    <p><strong>Completed:</strong> {{ reservation_stats.completed }}</p>
+                    <p><strong>Cancelled:</strong> {{ reservation_stats.cancelled }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Orders</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total:</strong> {{ order_stats.total }}</p>
+                    <p><strong>Placed:</strong> {{ order_stats.placed }}</p>
+                    <p><strong>Confirmed:</strong> {{ order_stats.confirmed }}</p>
+                    <p><strong>Preparing:</strong> {{ order_stats.preparing }}</p>
+                    <p><strong>Ready:</strong> {{ order_stats.ready }}</p>
+                    <p><strong>Served:</strong> {{ order_stats.served }}</p>
+                    <p><strong>Cancelled:</strong> {{ order_stats.cancelled }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

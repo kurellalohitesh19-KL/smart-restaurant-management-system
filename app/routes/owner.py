@@ -6,13 +6,66 @@ from app.models.restaurant import Restaurant, RestaurantStaff
 from app.models.table import Table
 from app.models.menu import MenuCategory, MenuItem
 from app.models.user import User
+from app.models.reservation import Reservation
+from app.models.order import Order, OrderItem
+from app.models.restaurant import CustomerRestaurant
+from sqlalchemy import func
+from datetime import datetime
 
 owner_bp = Blueprint('owner', __name__)
 
 @owner_bp.route('/dashboard')
 @role_required('restaurant_owner')
 def dashboard():
-    return {'message': 'Owner dashboard - protected'}
+    restaurant = Restaurant.query.filter_by(owner_id=current_user.id).first()
+    if not restaurant:
+        return render_template('owner/dashboard.html', restaurant=None)
+
+    # Tables
+    tables = Table.query.filter_by(restaurant_id=restaurant.id).all()
+    table_stats = {
+        'total': len(tables),
+        'available': sum(1 for t in tables if t.status == 'available'),
+        'reserved': sum(1 for t in tables if t.status == 'reserved'),
+        'occupied': sum(1 for t in tables if t.status == 'occupied'),
+        'maintenance': sum(1 for t in tables if t.status == 'maintenance')
+    }
+
+    # Reservations
+    today = datetime.now().date()
+    reservations = Reservation.query.filter_by(restaurant_id=restaurant.id).all()
+    res_stats = {
+        'today': sum(1 for r in reservations if r.reservation_date == today),
+        'pending': sum(1 for r in reservations if r.status == 'pending'),
+        'confirmed': sum(1 for r in reservations if r.status == 'confirmed'),
+        'completed': sum(1 for r in reservations if r.status == 'completed')
+    }
+
+    # Orders
+    orders = Order.query.filter_by(restaurant_id=restaurant.id).all()
+    order_stats = {
+        'today': sum(1 for o in orders if o.created_at.date() == today),
+        'pending': sum(1 for o in orders if o.status == 'placed'),
+        'preparing': sum(1 for o in orders if o.status == 'preparing'),
+        'ready': sum(1 for o in orders if o.status == 'ready'),
+        'served': sum(1 for o in orders if o.status == 'served')
+    }
+
+    # Staff
+    staff_count = RestaurantStaff.query.filter_by(restaurant_id=restaurant.id).count()
+
+    # Customers
+    customer_count = CustomerRestaurant.query.filter_by(restaurant_id=restaurant.id).count()
+
+    return render_template(
+        'owner/dashboard.html',
+        restaurant=restaurant,
+        table_stats=table_stats,
+        res_stats=res_stats,
+        order_stats=order_stats,
+        staff_count=staff_count,
+        customer_count=customer_count
+    )
 
 @owner_bp.route('/restaurant')
 @role_required('restaurant_owner')
@@ -507,3 +560,115 @@ def delete_menu_item(item_id):
     db.session.commit()
     flash("Menu item deleted successfully.", "success")
     return redirect(url_for('owner.view_menu'))
+
+# --- Reservation Management ---
+
+@owner_bp.route('/reservations')
+@role_required('restaurant_owner')
+def list_reservations():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage reservations.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    reservations = Reservation.query.filter_by(restaurant_id=restaurant.id).order_by(Reservation.reservation_date.desc(), Reservation.start_time.desc()).all()
+    return render_template('owner/reservations.html', reservations=reservations, restaurant=restaurant)
+
+@owner_bp.route('/reservations/<int:reservation_id>/confirm', methods=['POST'])
+@role_required('restaurant_owner')
+def confirm_reservation(reservation_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
+    if reservation.status == 'pending':
+        reservation.status = 'confirmed'
+        db.session.commit()
+        flash('Reservation confirmed successfully.', 'success')
+    else:
+        flash('Only pending reservations can be confirmed.', 'error')
+    return redirect(url_for('owner.list_reservations'))
+
+@owner_bp.route('/reservations/<int:reservation_id>/cancel', methods=['POST'])
+@role_required('restaurant_owner')
+def cancel_reservation(reservation_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
+    if reservation.status in ['pending', 'confirmed']:
+        reservation.status = 'cancelled'
+        db.session.commit()
+        flash('Reservation cancelled successfully.', 'success')
+    else:
+        flash('Reservation cannot be cancelled.', 'error')
+    return redirect(url_for('owner.list_reservations'))
+
+@owner_bp.route('/reservations/<int:reservation_id>/complete', methods=['POST'])
+@role_required('restaurant_owner')
+def complete_reservation(reservation_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
+    if reservation.status == 'confirmed':
+        reservation.status = 'completed'
+        db.session.commit()
+        flash('Reservation marked as completed.', 'success')
+    else:
+        flash('Only confirmed reservations can be marked as completed.', 'error')
+    return redirect(url_for('owner.list_reservations'))
+
+# --- Order Management ---
+
+@owner_bp.route('/orders')
+@role_required('restaurant_owner')
+def list_orders():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to manage orders.", "warning")
+        return redirect(url_for('owner.dashboard'))
+        
+    orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.created_at.desc()).all()
+    return render_template('owner/orders.html', orders=orders, restaurant=restaurant)
+
+@owner_bp.route('/orders/<int:order_id>')
+@role_required('restaurant_owner')
+def order_detail(order_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    order = Order.query.filter_by(id=order_id, restaurant_id=restaurant.id).first_or_404()
+    return render_template('owner/order_detail.html', order=order)
+
+@owner_bp.route('/orders/<int:order_id>/status', methods=['POST'])
+@role_required('restaurant_owner')
+def update_order_status(order_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+        
+    order = Order.query.filter_by(id=order_id, restaurant_id=restaurant.id).first_or_404()
+    new_status = request.form.get('status')
+    
+    valid_transitions = {
+        'placed': ['confirmed', 'cancelled'],
+        'confirmed': ['preparing', 'cancelled'],
+        'preparing': ['ready'],
+        'ready': ['served'],
+        'served': [],
+        'cancelled': []
+    }
+    
+    if new_status in valid_transitions.get(order.status, []):
+        order.status = new_status
+        db.session.commit()
+        flash(f"Order status updated to {new_status}.", "success")
+    else:
+        flash(f"Invalid status transition from {order.status} to {new_status}.", "danger")
+        
+    return redirect(url_for('owner.order_detail', order_id=order.id))

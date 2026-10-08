@@ -2,15 +2,68 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required
 from app.utils import role_required
 from app import db
-from app.models.restaurant import Restaurant
+from app.models.restaurant import Restaurant, RestaurantStaff
 from app.models.user import User
+from app.models.table import Table
+from app.models.reservation import Reservation
+from app.models.order import Order
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/dashboard')
 @role_required('super_admin')
 def dashboard():
-    return {'message': 'Super Admin dashboard - protected'}
+    users = User.query.all()
+    user_stats = {
+        'customers': sum(1 for u in users if u.role == 'customer'),
+        'owners': sum(1 for u in users if u.role == 'restaurant_owner'),
+        'staff': sum(1 for u in users if u.role == 'restaurant_staff'),
+        'admins': sum(1 for u in users if u.role == 'super_admin')
+    }
+
+    restaurants = Restaurant.query.all()
+    res_stats = {
+        'total': len(restaurants),
+        'active': sum(1 for r in restaurants if r.is_active),
+        'inactive': sum(1 for r in restaurants if not r.is_active)
+    }
+
+    tables = Table.query.all()
+    table_stats = {
+        'total': len(tables),
+        'available': sum(1 for t in tables if t.status == 'available'),
+        'reserved': sum(1 for t in tables if t.status == 'reserved'),
+        'occupied': sum(1 for t in tables if t.status == 'occupied'),
+        'maintenance': sum(1 for t in tables if t.status == 'maintenance')
+    }
+
+    reservations = Reservation.query.all()
+    reservation_stats = {
+        'total': len(reservations),
+        'pending': sum(1 for r in reservations if r.status == 'pending'),
+        'confirmed': sum(1 for r in reservations if r.status == 'confirmed'),
+        'cancelled': sum(1 for r in reservations if r.status == 'cancelled'),
+        'completed': sum(1 for r in reservations if r.status == 'completed')
+    }
+
+    orders = Order.query.all()
+    order_stats = {
+        'total': len(orders),
+        'placed': sum(1 for o in orders if o.status == 'placed'),
+        'confirmed': sum(1 for o in orders if o.status == 'confirmed'),
+        'preparing': sum(1 for o in orders if o.status == 'preparing'),
+        'ready': sum(1 for o in orders if o.status == 'ready'),
+        'served': sum(1 for o in orders if o.status == 'served'),
+        'cancelled': sum(1 for o in orders if o.status == 'cancelled')
+    }
+
+    return render_template('admin/dashboard.html',
+                           user_stats=user_stats,
+                           res_stats=res_stats,
+                           table_stats=table_stats,
+                           reservation_stats=reservation_stats,
+                           order_stats=order_stats)
 
 @admin_bp.route('/restaurants')
 @role_required('super_admin')

@@ -1,26 +1,72 @@
 {% extends "base.html" %}
-
 {% block title %}Staff Dashboard{% endblock %}
-
 {% block content %}
-<div class="staff-container">
+<div class="container mt-4">
     <h2>Staff Dashboard</h2>
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-        {% for category, message in messages %}
-          <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-
-    <div>
-        <p><strong>Name:</strong> {{ current_user.name }}</p>
-        <p><strong>Restaurant:</strong> {{ restaurant.name }}</p>
-        <p><strong>Designation:</strong> {{ staff_record.designation }}</p>
-        <p><strong>Status:</strong> <span style="color: {{ 'green' if staff_record.is_active else 'red' }}">{{ 'Active' if staff_record.is_active else 'Inactive' }}</span></p>
+    <div class="mb-4 mt-3">
+        <a href="{{ url_for('staff.list_tables') }}" class="btn btn-outline-primary mb-1">View Tables</a>
+        <a href="{{ url_for('staff.list_reservations') }}" class="btn btn-outline-primary mb-1">View Reservations</a>
+        <a href="{{ url_for('staff.list_orders') }}" class="btn btn-outline-primary mb-1">View Orders</a>
+        <a href="{{ url_for('staff.view_menu') }}" class="btn btn-outline-primary mb-1">View Menu</a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Your Profile</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ staff_record.user.name }}</p>
+                    <p><strong>Designation:</strong> {{ staff_record.designation }}</p>
+                    <p><strong>Assigned Restaurant:</strong> {{ restaurant.name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Tables</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Available:</strong> <span class="badge bg-success">{{ table_stats.available }}</span></p>
+                    <p><strong>Reserved:</strong> <span class="badge bg-warning text-dark">{{ table_stats.reserved }}</span></p>
+                    <p><strong>Occupied:</strong> <span class="badge bg-danger">{{ table_stats.occupied }}</span></p>
+                    <p><strong>Maintenance:</strong> <span class="badge bg-secondary">{{ table_stats.maintenance }}</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Reservations</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Today's:</strong> {{ res_stats.today }}</p>
+                    <p><strong>Pending:</strong> {{ res_stats.pending }}</p>
+                    <p><strong>Confirmed:</strong> {{ res_stats.confirmed }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Orders</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>New (Placed):</strong> {{ order_stats.placed }}</p>
+                    <p><strong>Confirmed:</strong> {{ order_stats.confirmed }}</p>
+                    <p><strong>Preparing:</strong> {{ order_stats.preparing }}</p>
+                    <p><strong>Ready:</strong> {{ order_stats.ready }}</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
