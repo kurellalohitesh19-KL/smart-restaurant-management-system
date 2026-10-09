@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Reservations - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>All Reservations</h2>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="GET" action="{{ url_for('admin.list_reservations') }}" style="display: flex; gap: 10px; align-items: flex-end;">
+            <div>
+                <label for="restaurant_id">Restaurant:</label><br>
+                <select name="restaurant_id" id="restaurant_id">
+                    <option value="">All</option>
+                    {% for r in restaurants %}
+                    <option value="{{ r.id }}" {% if current_restaurant == r.id %}selected{% endif %}>{{ r.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="status">Status:</label><br>
+                <select name="status" id="status">
+                    <option value="">All</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="date">Date:</label><br>
+                <input type="date" name="date" id="date" value="{{ current_date }}">
+            </div>
+            
+            <div>
+                <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                <a href="{{ url_for('admin.list_reservations') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Restaurant</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Guests</th>
+                <th>Table</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in reservations %}
+            <tr>
+                <td>{{ res.id }}</td>
+                <td>{{ res.restaurant.name if res.restaurant else 'N/A' }}</td>
+                <td>{{ res.customer.name if res.customer else 'N/A' }}</td>
+                <td>{{ res.reservation_date.strftime('%Y-%m-%d') if res.reservation_date else 'N/A' }}</td>
+                <td>{{ res.start_time.strftime('%H:%M') if res.start_time else 'N/A' }} - {{ res.end_time.strftime('%H:%M') if res.end_time else 'N/A' }}</td>
+                <td>{{ res.number_of_guests }}</td>
+                <td>{{ res.table.table_number if res.table else 'N/A' }}</td>
+                <td>
+                    {% if res.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif res.status == 'confirmed' %}
+                        <span class="badge bg-primary">Confirmed</span>
+                    {% elif res.status == 'completed' %}
+                        <span class="badge bg-success">Completed</span>
+                    {% elif res.status == 'cancelled' %}
+                        <span class="badge bg-danger">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.view_reservation', reservation_id=res.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9">No reservations found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br>
+    <a href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

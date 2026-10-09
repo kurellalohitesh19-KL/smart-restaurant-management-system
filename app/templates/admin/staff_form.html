@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if view_only %}View Staff{% else %}Edit Staff{% endif %} - Admin
+{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 600px; margin: 0 auto;">
+    <h2>{% if view_only %}View Staff{% else %}Edit Staff{% endif %}</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 15px;">
+            <label for="name">Name:</label><br>
+            <input type="text" id="name" name="name" value="{{ user.name if user else '' }}" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="email">Email:</label><br>
+            <input type="email" id="email" name="email" value="{{ user.email if user else '' }}" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="phone">Phone:</label><br>
+            <input type="text" id="phone" name="phone" value="{{ user.phone if user else '' }}" style="width: 100%;" {% if view_only %}disabled{% endif %}>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="designation">Designation:</label><br>
+            <input type="text" id="designation" name="designation" value="{{ staff.designation if staff else '' }}" style="width: 100%;" {% if view_only %}disabled{% endif %}>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="restaurant_id">Assigned Restaurant:</label><br>
+            <select id="restaurant_id" name="restaurant_id" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
+                {% if view_only %}
+                    <option>{{ staff.restaurant.name if staff.restaurant else 'None' }}</option>
+                {% else %}
+                    <option value="">-- Select Restaurant --</option>
+                    {% for r in restaurants %}
+                    <option value="{{ r.id }}" {% if staff and staff.restaurant_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        {% if not view_only %}
+        <div style="margin-bottom: 15px;">
+            <button type="submit" class="btn btn-primary">Update Staff</button>
+        </div>
+        {% endif %}
+    </form>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('admin.list_staff') }}">Back to Staff List</a>
+    </div>
+</div>
+{% endblock %}

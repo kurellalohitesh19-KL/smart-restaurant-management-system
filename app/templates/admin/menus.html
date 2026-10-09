@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Menus - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>All Restaurant Menus</h2>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="GET" action="{{ url_for('admin.list_menus') }}" style="display: inline-block;">
+            <label for="restaurant_id">Filter by Restaurant:</label>
+            <select name="restaurant_id" id="restaurant_id" onchange="this.form.submit()">
+                <option value="">-- All Restaurants --</option>
+                {% for r in restaurants %}
+                <option value="{{ r.id }}" {% if current_filter == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="search" style="margin-left: 10px;">Search Item Name:</label>
+            <input type="text" name="search" id="search" value="{{ search }}">
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            <a href="{{ url_for('admin.list_menus') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+        </form>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('admin.create_category') }}" class="btn btn-outline-primary">Add Category</a>
+        <a href="{{ url_for('admin.create_menu_item') }}" class="btn btn-outline-primary">Add Menu Item</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-4">
+            <h4>Categories</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Restaurant</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                    <tr>
+                        <td>{{ cat.name }}</td>
+                        <td>{{ cat.restaurant.name if cat.restaurant else 'None' }}</td>
+                        <td>{{ 'Yes' if cat.is_active else 'No' }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.edit_category', category_id=cat.id) }}">Edit</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No categories found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="col-md-8">
+            <h4>Menu Items</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Restaurant</th>
+                        <th>Price</th>
+                        <th>Available</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.category.name if item.category else 'None' }}</td>
+                        <td>{{ item.restaurant.name if item.restaurant else 'None' }}</td>
+                        <td>${{ "%.2f"|format(item.price) }}</td>
+                        <td>
+                            {% if item.is_available %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-danger">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin.edit_menu_item', item_id=item.id) }}">Edit</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">No items found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <br>
+    <a href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

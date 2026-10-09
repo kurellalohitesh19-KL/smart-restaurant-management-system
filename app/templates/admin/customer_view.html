@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}View Customer - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 800px; margin: 0 auto;">
+    <h2>Customer Details: {{ customer.name }}</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Profile Information</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>ID:</strong> {{ customer.id }}</p>
+            <p><strong>Name:</strong> {{ customer.name }}</p>
+            <p><strong>Email:</strong> {{ customer.email }}</p>
+            <p><strong>Phone:</strong> {{ customer.phone or 'N/A' }}</p>
+            <p><strong>Status:</strong> <span class="badge {{ 'bg-success' if customer.is_active else 'bg-danger' }}">{{ 'Active' if customer.is_active else 'Inactive' }}</span></p>
+            <p><strong>Registered:</strong> {{ customer.created_at.strftime('%Y-%m-%d %H:%M:%S') if customer.created_at else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Interacted Restaurants</h4>
+        </div>
+        <div class="card-body">
+            {% if customer.interacted_restaurants %}
+            <ul>
+                {% for interaction in customer.interacted_restaurants %}
+                <li>
+                    <strong><a href="{{ url_for('admin.view_restaurant', restaurant_id=interaction.restaurant_id) }}">{{ interaction.restaurant.name }}</a></strong>
+                    <br>
+                    <small class="text-muted">First interaction: {{ interaction.first_interaction.strftime('%Y-%m-%d') if interaction.first_interaction else 'N/A' }}</small>
+                    <br>
+                    <small class="text-muted">Last interaction: {{ interaction.last_interaction.strftime('%Y-%m-%d') if interaction.last_interaction else 'N/A' }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No restaurant interactions yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <form action="{{ url_for('admin.toggle_customer', customer_id=customer.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn {{ 'btn-warning' if customer.is_active else 'btn-success' }}">
+                {{ 'Deactivate Customer' if customer.is_active else 'Activate Customer' }}
+            </button>
+        </form>
+        <a href="{{ url_for('admin.list_customers') }}" class="btn btn-outline-secondary" style="margin-left: 10px;">Back to Customers</a>
+    </div>
+</div>
+{% endblock %}

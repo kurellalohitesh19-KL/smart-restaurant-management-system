@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Customers - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>All Customers</h2>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="GET" action="{{ url_for('admin.list_customers') }}" style="display: inline-block;">
+            <label for="search">Search Customers:</label>
+            <input type="text" name="search" id="search" value="{{ search }}" placeholder="Name or Email">
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            <a href="{{ url_for('admin.list_customers') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Registered</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.id }}</td>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.email }}</td>
+                <td>{{ 'Active' if customer.is_active else 'Inactive' }}</td>
+                <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('admin.view_customer', customer_id=customer.id) }}">View</a> |
+                    <form action="{{ url_for('admin.toggle_customer', customer_id=customer.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-sm {{ 'btn-warning' if customer.is_active else 'btn-success' }}">
+                            {{ 'Deactivate' if customer.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No customers found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br>
+    <a href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

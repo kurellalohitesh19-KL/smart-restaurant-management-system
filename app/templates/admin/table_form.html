@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Table - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 600px; margin: 0 auto;">
+    <h2>Edit Table</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 15px;">
+            <label for="table_number">Table Number:</label><br>
+            <input type="text" id="table_number" name="table_number" value="{{ table.table_number if table else '' }}" required style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="capacity">Capacity (Guests):</label><br>
+            <input type="number" id="capacity" name="capacity" value="{{ table.capacity if table else '' }}" min="1" required style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="status">Status:</label><br>
+            <select id="status" name="status" required style="width: 100%;">
+                <option value="available" {% if table and table.status == 'available' %}selected{% endif %}>Available</option>
+                <option value="reserved" {% if table and table.status == 'reserved' %}selected{% endif %}>Reserved</option>
+                <option value="occupied" {% if table and table.status == 'occupied' %}selected{% endif %}>Occupied</option>
+                <option value="maintenance" {% if table and table.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label for="restaurant_id">Assigned Restaurant:</label><br>
+            <select id="restaurant_id" name="restaurant_id" required style="width: 100%;">
+                <option value="">-- Select Restaurant --</option>
+                {% for r in restaurants %}
+                <option value="{{ r.id }}" {% if table and table.restaurant_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <button type="submit" class="btn btn-primary">Update Table</button>
+        </div>
+    </form>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('admin.list_tables') }}">Back to Tables</a>
+    </div>
+</div>
+{% endblock %}

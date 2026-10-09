@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Staff - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>All Restaurant Staff</h2>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="GET" action="{{ url_for('admin.list_staff') }}" style="display: inline-block;">
+            <label for="restaurant_id">Filter by Restaurant:</label>
+            <select name="restaurant_id" id="restaurant_id" onchange="this.form.submit()">
+                <option value="">-- All Restaurants --</option>
+                {% for r in restaurants %}
+                <option value="{{ r.id }}" {% if current_filter == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+            </select>
+            <a href="{{ url_for('admin.list_staff') }}" class="btn btn-sm btn-outline-secondary" style="margin-left: 10px;">Clear Filter</a>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Restaurant</th>
+                <th>Designation</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for staff in staff_members %}
+            <tr>
+                <td>{{ staff.id }}</td>
+                <td>{{ staff.user.name }}</td>
+                <td>{{ staff.user.email }}</td>
+                <td>
+                    {% if staff.restaurant %}
+                        <a href="{{ url_for('admin.view_restaurant', restaurant_id=staff.restaurant_id) }}">{{ staff.restaurant.name }}</a>
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td>{{ staff.designation or 'None' }}</td>
+                <td>{{ 'Active' if staff.is_active else 'Inactive' }}</td>
+                <td>
+                    <a href="{{ url_for('admin.view_staff', staff_id=staff.id) }}">View</a> |
+                    <a href="{{ url_for('admin.edit_staff', staff_id=staff.id) }}">Edit</a> |
+                    <form action="{{ url_for('admin.toggle_staff', staff_id=staff.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-sm {{ 'btn-warning' if staff.is_active else 'btn-success' }}">
+                            {{ 'Deactivate' if staff.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7">No staff found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br>
+    <a href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}

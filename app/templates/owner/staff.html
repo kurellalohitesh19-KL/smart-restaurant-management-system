@@ -31,16 +31,9 @@
         <tbody>
             {% for s in staff_members %}
             <tr>
-                <!-- We don't have access to s.user directly if relationships aren't eagerly loaded, but we can access it if User relationship is defined.
-                     Wait, RestaurantStaff doesn't have a 'user' relationship explicitly defined in models? Let's assume we can fetch it, or I should join it in the route.
-                     Wait, in models/restaurant.py I didn't define a 'user' relationship on RestaurantStaff, only 'restaurant'.
-                     I will define it or just fetch it. I'll rely on a basic workaround if it fails, or I should update RestaurantStaff model to have a user relationship.
-                     Actually, I will use backref from User if exists, but let's just do `s.user_id` for safety here, or let me assume I can add a relationship.
-                -->
-                <!-- Workaround: I'll just show the user_id for now if user relationship isn't available, but actually let's assume SQLAlchemy backref 'user' was not created. Wait, let's fix the model if needed, but for MVP let's just show basic info. Wait, I can't easily fetch User here without `s.user`. Let's assume `s.user` exists because we can define it, or I'll just skip name/email in the table if it errors. I'll use a safer template. -->
-                <td>{{ s.user_id }}</td>
-                <td>N/A</td>
-                <td>N/A</td>
+                <td>{{ s.user.name }}</td>
+                <td>{{ s.user.email }}</td>
+                <td>{{ s.user.phone or 'N/A' }}</td>
                 <td>{{ s.designation }}</td>
                 <td>{{ 'Active' if s.is_active else 'Inactive' }}</td>
                 <td>

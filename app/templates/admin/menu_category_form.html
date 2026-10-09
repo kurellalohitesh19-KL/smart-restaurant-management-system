@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if category else 'Create' }} Menu Category - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 600px; margin: 0 auto;">
+    <h2>{{ 'Edit' if category else 'Create' }} Menu Category</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 15px;">
+            <label for="name">Category Name:</label><br>
+            <input type="text" id="name" name="name" value="{{ category.name if category else '' }}" required style="width: 100%;">
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label for="restaurant_id">Assigned Restaurant:</label><br>
+            <select id="restaurant_id" name="restaurant_id" required style="width: 100%;">
+                <option value="">-- Select Restaurant --</option>
+                {% for r in restaurants %}
+                <option value="{{ r.id }}" {% if category and category.restaurant_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="description">Description:</label><br>
+            <textarea id="description" name="description" rows="3" style="width: 100%;">{{ category.description if category else '' }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label>
+                <input type="checkbox" name="is_active" {% if category and category.is_active %}checked{% elif not category %}checked{% endif %}>
+                Is Active
+            </label>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <button type="submit" class="btn btn-primary">{{ 'Update' if category else 'Create' }} Category</button>
+        </div>
+    </form>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('admin.list_menus') }}">Back to Menus</a>
+    </div>
+</div>
+{% endblock %}
