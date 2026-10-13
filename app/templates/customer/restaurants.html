@@ -31,7 +31,7 @@
         <div class="restaurant-card" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">
             <h3><a href="{{ url_for('customer.restaurant_detail', restaurant_id=r.id) }}">{{ r.name }}</a></h3>
             <p><strong>City:</strong> {{ r.city }}</p>
-            <p>{{ r.description }}</p>
+            {% if r.description %}<p class="text-muted">{{ r.description }}</p>{% endif %}
         </div>
         {% else %}
         <p>No restaurants found.</p>

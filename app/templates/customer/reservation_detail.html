@@ -16,6 +16,7 @@
     
     {% if reservation.status in ['pending', 'confirmed'] %}
     <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=reservation.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel Reservation</button>
     </form>
     {% endif %}

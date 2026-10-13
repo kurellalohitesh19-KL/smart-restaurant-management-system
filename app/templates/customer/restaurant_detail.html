@@ -8,8 +8,8 @@
     <p><strong>City:</strong> {{ restaurant.city }}</p>
     <p><strong>State:</strong> {{ restaurant.state }}</p>
     <p><strong>Address:</strong> {{ restaurant.address }}</p>
-    <p><strong>Phone:</strong> {{ restaurant.phone }}</p>
-    <p><strong>Description:</strong> {{ restaurant.description }}</p>
+    <p><strong>Phone:</strong> {{ restaurant.phone or 'Not provided' }}</p>
+    <p><strong>Description:</strong> {{ restaurant.description or 'No description provided.' }}</p>
     
     <div style="margin-top: 20px;">
         <a href="{{ url_for('customer.restaurant_menu', restaurant_id=restaurant.id) }}" class="button">View Menu</a>

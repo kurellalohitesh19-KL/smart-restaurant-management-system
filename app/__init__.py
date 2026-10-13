@@ -7,10 +7,12 @@ Flask Application Factory Package.
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 # Initialize extensions (not bound to app yet)
 db = SQLAlchemy()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 
 def create_app(config_name='development'):
@@ -31,10 +33,21 @@ def create_app(config_name='development'):
     # Initialize extensions with the app
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # Configure Flask-Login
     login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'info'
+
+    # Safe CSRF error handler
+    from flask_wtf.csrf import CSRFError
+    from flask import render_template, jsonify, request
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        if request.is_json or request.path.startswith('/api/'):
+            return jsonify({'error': 'CSRF validation failed', 'reason': e.description}), 400
+        return render_template('csrf_error.html', reason=e.description), 400
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -59,8 +72,25 @@ def create_app(config_name='development'):
     app.register_blueprint(api_bp, url_prefix='/api')
 
     # -------------------------------------------------
-    # Health Check Route
+    # Root Route & Health Check
     # -------------------------------------------------
+    @app.route('/')
+    def index():
+        from flask import redirect, url_for
+        from flask_login import current_user
+
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+
+        role_endpoints = {
+            'customer': 'customer.dashboard',
+            'restaurant_owner': 'owner.dashboard',
+            'restaurant_staff': 'staff.dashboard',
+            'super_admin': 'admin.dashboard',
+        }
+        target_endpoint = role_endpoints.get(current_user.role, 'auth.login')
+        return redirect(url_for(target_endpoint))
+
     @app.route('/health')
     def health_check():
         return {

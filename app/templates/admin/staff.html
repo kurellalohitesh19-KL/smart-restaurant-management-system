@@ -16,6 +16,7 @@
                 {% endfor %}
             </select>
             <a href="{{ url_for('admin.list_staff') }}" class="btn btn-sm btn-outline-secondary" style="margin-left: 10px;">Clear Filter</a>
+            <a href="{{ url_for('admin.create_staff') }}" class="btn btn-sm btn-primary" style="margin-left: 10px;">Add Staff</a>
         </form>
     </div>
 
@@ -29,7 +30,8 @@
       {% endif %}
     {% endwith %}
 
-    <table>
+    <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
         <thead>
             <tr>
                 <th>ID</th>
@@ -51,15 +53,16 @@
                     {% if staff.restaurant %}
                         <a href="{{ url_for('admin.view_restaurant', restaurant_id=staff.restaurant_id) }}">{{ staff.restaurant.name }}</a>
                     {% else %}
-                        None
+                        Unassigned
                     {% endif %}
                 </td>
-                <td>{{ staff.designation or 'None' }}</td>
+                <td>{{ staff.designation or '—' }}</td>
                 <td>{{ 'Active' if staff.is_active else 'Inactive' }}</td>
                 <td>
                     <a href="{{ url_for('admin.view_staff', staff_id=staff.id) }}">View</a> |
                     <a href="{{ url_for('admin.edit_staff', staff_id=staff.id) }}">Edit</a> |
                     <form action="{{ url_for('admin.toggle_staff', staff_id=staff.id) }}" method="POST" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm {{ 'btn-warning' if staff.is_active else 'btn-success' }}">
                             {{ 'Deactivate' if staff.is_active else 'Activate' }}
                         </button>
@@ -73,6 +76,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     
     <br>
     <a href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>

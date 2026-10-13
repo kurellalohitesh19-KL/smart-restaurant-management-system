@@ -41,7 +41,8 @@
     <div class="row">
         <div class="col-md-4">
             <h4>Categories</h4>
-            <table class="table">
+            <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mt-2">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -54,22 +55,24 @@
                     {% for cat in categories %}
                     <tr>
                         <td>{{ cat.name }}</td>
-                        <td>{{ cat.restaurant.name if cat.restaurant else 'None' }}</td>
+                        <td>{{ cat.restaurant.name if cat.restaurant else '—' }}</td>
                         <td>{{ 'Yes' if cat.is_active else 'No' }}</td>
                         <td>
-                            <a href="{{ url_for('admin.edit_category', category_id=cat.id) }}">Edit</a>
+                            <a href="{{ url_for('admin.edit_category', category_id=cat.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4">No categories found.</td></tr>
+                    <tr><td colspan="4" class="text-muted">No categories found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
         
         <div class="col-md-8">
             <h4>Menu Items</h4>
-            <table class="table">
+            <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mt-2">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -84,9 +87,9 @@
                     {% for item in items %}
                     <tr>
                         <td>{{ item.name }}</td>
-                        <td>{{ item.category.name if item.category else 'None' }}</td>
-                        <td>{{ item.restaurant.name if item.restaurant else 'None' }}</td>
-                        <td>${{ "%.2f"|format(item.price) }}</td>
+                        <td>{{ item.category.name if item.category else '—' }}</td>
+                        <td>{{ item.restaurant.name if item.restaurant else '—' }}</td>
+                        <td>₹{{ "%.2f"|format(item.price) }}</td>
                         <td>
                             {% if item.is_available %}
                                 <span class="badge bg-success">Yes</span>
@@ -95,16 +98,17 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('admin.edit_menu_item', item_id=item.id) }}">Edit</a>
+                            <a href="{{ url_for('admin.edit_menu_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6">No items found.</td>
+                        <td colspan="6" class="text-muted">No items found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     

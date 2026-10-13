@@ -4,7 +4,8 @@
 <div class="container mt-4">
     <h2>Your Cart</h2>
     {% if session.get('cart') %}
-        <table class="table table-striped">
+        <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
             <thead>
                 <tr>
                     <th>Item</th>
@@ -21,6 +22,7 @@
                     <td>₹{{ item.price }}</td>
                     <td>
                         <form action="{{ url_for('customer.update_cart') }}" method="POST" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="menu_item_id" value="{{ item_id }}">
                             <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control d-inline w-auto">
                             <button type="submit" class="btn btn-sm btn-primary">Update</button>
@@ -29,6 +31,7 @@
                     <td>₹{{ item.subtotal }}</td>
                     <td>
                         <form action="{{ url_for('customer.remove_from_cart') }}" method="POST" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="menu_item_id" value="{{ item_id }}">
                             <button type="submit" class="btn btn-sm btn-danger">Remove</button>
                         </form>
@@ -37,9 +40,11 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         <div class="d-flex justify-content-between align-items-center mt-3">
             <h4>Total: ₹{{ total_amount }}</h4>
             <form action="{{ url_for('customer.place_order') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="btn btn-success btn-lg">Place Order</button>
             </form>
         </div>

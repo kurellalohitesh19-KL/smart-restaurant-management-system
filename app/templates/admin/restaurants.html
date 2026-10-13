@@ -17,7 +17,8 @@
       {% endif %}
     {% endwith %}
 
-    <table>
+    <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle mt-3">
         <thead>
             <tr>
                 <th>ID</th>
@@ -33,20 +34,21 @@
             <tr>
                 <td>{{ r.id }}</td>
                 <td>{{ r.name }}</td>
-                <td>{{ r.owner_id }}</td>
+                <td>{{ r.owner_id or '—' }}</td>
                 <td>{{ r.city }}</td>
-                <td>{{ 'Active' if r.is_active else 'Inactive' }}</td>
+                <td><span class="badge {{ 'bg-success' if r.is_active else 'bg-secondary' }}">{{ 'Active' if r.is_active else 'Inactive' }}</span></td>
                 <td>
-                    <a href="{{ url_for('admin.view_restaurant', restaurant_id=r.id) }}">View</a> |
-                    <a href="{{ url_for('admin.edit_restaurant', restaurant_id=r.id) }}">Edit</a>
+                    <a href="{{ url_for('admin.view_restaurant', restaurant_id=r.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    <a href="{{ url_for('admin.edit_restaurant', restaurant_id=r.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6">No restaurants found.</td>
+                <td colspan="6" class="text-muted">No restaurants found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 {% endblock %}

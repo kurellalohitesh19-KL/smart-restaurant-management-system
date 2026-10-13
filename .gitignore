@@ -29,13 +29,28 @@ env/
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
 
 # =========================
-# Flask / Instance
+# Flask / Instance & Databases
 # =========================
 instance/
 *.db
+*.sqlite
 *.sqlite3
+
+# =========================
+# Database Backups & Dumps
+# =========================
+*.sql
+*.bak
+*.dump
+
+# =========================
+# Scratch & Temporary Test Artifacts
+# =========================
+scratch/
 
 # =========================
 # IDE / Editor

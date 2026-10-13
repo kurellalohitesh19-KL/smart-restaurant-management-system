@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if view_only %}View Staff{% else %}Edit Staff{% endif %} - Admin
+{% if view_only %}View Staff{% elif staff %}Edit Staff{% else %}Add Staff{% endif %} - Admin
 {% endblock %}
 
 {% block content %}
 <div class="admin-container" style="max-width: 600px; margin: 0 auto;">
-    <h2>{% if view_only %}View Staff{% else %}Edit Staff{% endif %}</h2>
+    <h2>{% if view_only %}View Staff{% elif staff %}Edit Staff{% else %}Add Staff{% endif %}</h2>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -19,6 +19,7 @@
     {% endwith %}
 
     <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div style="margin-bottom: 15px;">
             <label for="name">Name:</label><br>
             <input type="text" id="name" name="name" value="{{ user.name if user else '' }}" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
@@ -28,6 +29,13 @@
             <label for="email">Email:</label><br>
             <input type="email" id="email" name="email" value="{{ user.email if user else '' }}" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
         </div>
+
+        {% if not staff and not view_only %}
+        <div style="margin-bottom: 15px;">
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required style="width: 100%;">
+        </div>
+        {% endif %}
 
         <div style="margin-bottom: 15px;">
             <label for="phone">Phone:</label><br>
@@ -43,7 +51,7 @@
             <label for="restaurant_id">Assigned Restaurant:</label><br>
             <select id="restaurant_id" name="restaurant_id" required style="width: 100%;" {% if view_only %}disabled{% endif %}>
                 {% if view_only %}
-                    <option>{{ staff.restaurant.name if staff.restaurant else 'None' }}</option>
+                    <option>{{ staff.restaurant.name if staff.restaurant else 'Unassigned' }}</option>
                 {% else %}
                     <option value="">-- Select Restaurant --</option>
                     {% for r in restaurants %}
@@ -55,7 +63,7 @@
 
         {% if not view_only %}
         <div style="margin-bottom: 15px;">
-            <button type="submit" class="btn btn-primary">Update Staff</button>
+            <button type="submit" class="btn btn-primary">{% if staff %}Update Staff{% else %}Create Staff{% endif %}</button>
         </div>
         {% endif %}
     </form>

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}CSRF Error - Smart Restaurant{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Security Verification Failed (CSRF Error)</h4>
+        <p>Your session or security token is invalid or expired. {{ reason }}</p>
+        <hr>
+        <p class="mb-0">Please refresh the page and try submitting the form again.</p>
+    </div>
+</div>
+{% endblock %}

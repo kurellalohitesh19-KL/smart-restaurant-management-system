@@ -44,6 +44,10 @@ class Config:
     GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
 
 
+    # CSRF Protection
+    WTF_CSRF_ENABLED = True
+
+
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
@@ -58,6 +62,8 @@ class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # Explicit testing override for standard unit tests
+    WTF_CSRF_ENABLED = False
 
 
 # Configuration dictionary

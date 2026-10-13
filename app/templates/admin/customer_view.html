@@ -45,6 +45,7 @@
 
     <div style="margin-top: 20px;">
         <form action="{{ url_for('admin.toggle_customer', customer_id=customer.id) }}" method="POST" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" class="btn {{ 'btn-warning' if customer.is_active else 'btn-success' }}">
                 {{ 'Deactivate Customer' if customer.is_active else 'Activate Customer' }}
             </button>

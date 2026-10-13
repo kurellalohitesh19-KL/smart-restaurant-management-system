@@ -17,6 +17,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('customer.create_reservation', restaurant_id=restaurant.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div>
             <label>Select Table</label>
             <select name="table_id" required>

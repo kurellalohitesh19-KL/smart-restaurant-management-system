@@ -17,6 +17,7 @@
     {% endwith %}
 
     <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div style="margin-bottom: 15px;">
             <label for="table_number">Table Number:</label><br>
             <input type="text" id="table_number" name="table_number" value="{{ table.table_number if table else '' }}" required style="width: 100%;">

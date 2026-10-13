@@ -93,6 +93,7 @@ class CustomerDiscoveryTestCase(unittest.TestCase):
         self.assertNotIn(b'Pepperoni (Out)', resp.data) # is_available = False
         # c_inactive is not tested explicitly here since relationship might load all categories, but my route filters `is_active=True`
         self.assertNotIn(b'Secret Menu', resp.data)
+        self.assertIn(b'Add to Cart', resp.data)
 
     def test_inactive_restaurants_are_hidden(self):
         self._login('customer@test.com')

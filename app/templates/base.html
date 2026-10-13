@@ -4,18 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Smart Restaurant Management System{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <!-- Custom Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body>
-    <!-- Navigation Placeholder -->
+    <!-- Responsive Brand & Role Navigation Header -->
     <header>
-        <nav>
-            <h1>Smart Restaurant</h1>
+        <nav class="navbar navbar-expand-lg navbar-dark smart-navbar" aria-label="Main Navigation">
+            <div class="container-fluid container-xl">
+                <a class="navbar-brand" href="{{ url_for('customer.list_restaurants') if not current_user.is_authenticated else (url_for('customer.dashboard') if current_user.role == 'customer' else (url_for('owner.dashboard') if current_user.role == 'restaurant_owner' else (url_for('staff.dashboard') if current_user.role == 'restaurant_staff' else url_for('admin.dashboard')))) }}">
+                    <span class="brand-gold">Smart</span> Restaurant
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#smartNavbarNav" aria-controls="smartNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="smartNavbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        {% if not current_user.is_authenticated %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.list_restaurants') }}">Discover Restaurants</a>
+                            </li>
+                        {% elif current_user.role == 'customer' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.list_restaurants') }}">Restaurants</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.view_cart') }}">
+                                    Cart
+                                    {% if session.get('cart') %}
+                                        <span class="cart-badge">{{ session.get('cart')|length }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.list_reservations') }}">Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('customer.list_orders') }}">Orders</a>
+                            </li>
+                        {% elif current_user.role == 'restaurant_owner' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.view_restaurant') }}">Restaurant</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.list_staff') }}">Staff</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.list_tables') }}">Tables</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.view_menu') }}">Menu</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.list_reservations') }}">Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.list_orders') }}">Orders</a>
+                            </li>
+                        {% elif current_user.role == 'restaurant_staff' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.list_tables') }}">Tables</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.list_reservations') }}">Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.view_menu') }}">Menu</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.list_orders') }}">Orders</a>
+                            </li>
+                        {% elif current_user.role == 'super_admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_restaurants') }}">Restaurants</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_staff') }}">Staff</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_customers') }}">Customers</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_tables') }}">Tables</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_menus') }}">Menus</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_reservations') }}">Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_orders') }}">Orders</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+                        {% if not current_user.is_authenticated %}
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                            <a class="btn btn-sm btn-primary" href="{{ url_for('auth.register') }}">Register</a>
+                        {% else %}
+                            <div class="user-badge d-none d-sm-flex">
+                                <span>{{ current_user.name }}</span>
+                                <span class="role-tag">{{ current_user.role.replace('_', ' ') }}</span>
+                            </div>
+                            <form id="nav-logout-form" action="{{ url_for('auth.logout') }}" method="POST" class="d-inline mb-0">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="button" class="btn btn-sm btn-logout" id="nav-logout-btn" onclick="document.getElementById('nav-logout-form').submit()">Logout</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </nav>
     </header>
 
     <!-- Main Content -->
     <main>
-        <div class="container mt-2">
+        <div class="container mt-3">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -31,9 +153,14 @@
         {% endblock %}
     </main>
 
-    <!-- Footer Placeholder -->
-    <footer>
-        <p>&copy; 2026 Smart Restaurant Management System (Trichy)</p>
+    <!-- Footer -->
+    <footer class="smart-footer">
+        <div class="container">
+            <p>&copy; 2026 Smart Restaurant Management System (Trichy)</p>
+        </div>
     </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>

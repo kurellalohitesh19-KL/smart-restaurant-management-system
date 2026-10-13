@@ -19,7 +19,7 @@
                 </div>
                 <div class="card-body">
                     <p><strong>Name:</strong> {{ staff_record.user.name }}</p>
-                    <p><strong>Designation:</strong> {{ staff_record.designation }}</p>
+                    <p><strong>Designation:</strong> {{ staff_record.designation or 'Not assigned' }}</p>
                     <p><strong>Assigned Restaurant:</strong> {{ restaurant.name }}</p>
                 </div>
             </div>

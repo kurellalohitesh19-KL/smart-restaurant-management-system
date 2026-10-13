@@ -17,6 +17,7 @@
     {% endwith %}
 
     <form method="POST" {% if restaurant and not view_only %}action="{{ url_for('admin.edit_restaurant', restaurant_id=restaurant.id) }}"{% elif not view_only %}action="{{ url_for('admin.create_restaurant') }}"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div>
             <label>Name</label>
             <input type="text" name="name" value="{{ restaurant.name if restaurant else '' }}" required {% if view_only %}disabled{% endif %}>

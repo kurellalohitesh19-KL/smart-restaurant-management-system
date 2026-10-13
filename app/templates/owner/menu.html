@@ -29,14 +29,16 @@
             {{ category.name }} 
             {% if not category.is_active %}(Inactive){% endif %}
         </h3>
-        <p>{{ category.description }}</p>
+        {% if category.description %}<p class="text-muted">{{ category.description }}</p>{% endif %}
         
-        <a href="{{ url_for('owner.edit_category', category_id=category.id) }}">Edit Category</a>
+        <a href="{{ url_for('owner.edit_category', category_id=category.id) }}" class="btn btn-sm btn-outline-primary">Edit Category</a>
         <form method="POST" action="{{ url_for('owner.delete_category', category_id=category.id) }}" style="display:inline;">
-            <button type="submit" onclick="return confirm('Delete category?');">Delete Category</button>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete category?');">Delete Category</button>
         </form>
         
-        <table style="width: 100%; margin-top: 10px;">
+        <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mt-2">
             <thead>
                 <tr>
                     <th>Item Name</th>
@@ -49,22 +51,24 @@
                 {% for item in category.items %}
                 <tr>
                     <td>{{ item.name }}</td>
-                    <td>${{ item.price }}</td>
-                    <td>{{ 'Available' if item.is_available else 'Unavailable' }}</td>
+                    <td>₹{{ item.price }}</td>
+                    <td><span class="badge {{ 'bg-success' if item.is_available else 'bg-secondary' }}">{{ 'Available' if item.is_available else 'Unavailable' }}</span></td>
                     <td>
-                        <a href="{{ url_for('owner.edit_menu_item', item_id=item.id) }}">Edit</a>
+                        <a href="{{ url_for('owner.edit_menu_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                         <form method="POST" action="{{ url_for('owner.delete_menu_item', item_id=item.id) }}" style="display:inline;">
-                            <button type="submit" onclick="return confirm('Delete item?');">Delete</button>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete item?');">Delete</button>
                         </form>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4">No items in this category.</td>
+                    <td colspan="4" class="text-muted">No items in this category.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
     {% else %}
     <p>No menu categories found.</p>

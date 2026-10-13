@@ -168,6 +168,55 @@ def list_staff():
     
     return render_template('admin/staff.html', staff_members=staff_members, restaurants=restaurants, current_filter=restaurant_id)
 
+@admin_bp.route('/staff/create', methods=['GET', 'POST'])
+@role_required('super_admin')
+def create_staff():
+    restaurants = Restaurant.query.all()
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        password = request.form.get('password')
+        designation = request.form.get('designation')
+        restaurant_id = request.form.get('restaurant_id', type=int)
+
+        if not name or not email or not password or not restaurant_id:
+            flash("Name, email, password, and assigned restaurant are required.", "danger")
+            return redirect(url_for('admin.create_staff'))
+
+        if User.query.filter_by(email=email).first():
+            flash("Email is already registered.", "danger")
+            return redirect(url_for('admin.create_staff'))
+
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            flash("Invalid restaurant selected.", "danger")
+            return redirect(url_for('admin.create_staff'))
+
+        new_user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            role='restaurant_staff'
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.flush()
+
+        new_staff = RestaurantStaff(
+            user_id=new_user.id,
+            restaurant_id=restaurant.id,
+            designation=designation,
+            is_active=True
+        )
+        db.session.add(new_staff)
+        db.session.commit()
+
+        flash("Staff account created successfully.", "success")
+        return redirect(url_for('admin.list_staff'))
+
+    return render_template('admin/staff_form.html', staff=None, user=None, restaurants=restaurants, view_only=False)
+
 @admin_bp.route('/staff/<int:staff_id>')
 @role_required('super_admin')
 def view_staff(staff_id):

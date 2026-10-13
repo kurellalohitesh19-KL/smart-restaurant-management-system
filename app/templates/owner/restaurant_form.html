@@ -17,6 +17,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('owner.edit_restaurant') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div>
             <label>Name</label>
             <input type="text" name="name" value="{{ restaurant.name }}" required>

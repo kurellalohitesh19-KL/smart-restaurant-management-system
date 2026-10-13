@@ -9,14 +9,19 @@
     {% for category in categories %}
     <div class="category-block" style="border: 1px solid #ddd; margin-bottom: 20px; padding: 15px;">
         <h3>{{ category.name }}</h3>
-        <p>{{ category.description }}</p>
+        {% if category.description %}<p class="text-muted">{{ category.description }}</p>{% endif %}
         
-        <ul>
+        <ul class="list-unstyled">
             {% for item in category.items %}
                 {% if item.is_available %}
-                <li>
-                    <strong>{{ item.name }}</strong> - ${{ item.price }}
-                    <p>{{ item.description }}</p>
+                <li class="mb-3 p-2 border-bottom">
+                    <strong>{{ item.name }}</strong> - ₹{{ item.price }}
+                    {% if item.description %}<p class="text-muted mb-1">{{ item.description }}</p>{% endif %}
+                    <form action="{{ url_for('customer.add_to_cart') }}" method="POST" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-sm btn-primary">Add to Cart</button>
+                    </form>
                 </li>
                 {% endif %}
             {% else %}

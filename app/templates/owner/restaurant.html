@@ -21,7 +21,7 @@
     {% elif restaurant %}
         <div>
             <p><strong>Name:</strong> {{ restaurant.name }}</p>
-            <p><strong>Description:</strong> {{ restaurant.description }}</p>
+            <p><strong>Description:</strong> {{ restaurant.description or '—' }}</p>
             <p><strong>City:</strong> {{ restaurant.city }}</p>
             <p><strong>Status:</strong> {{ 'Active' if restaurant.is_active else 'Inactive' }}</p>
         </div>

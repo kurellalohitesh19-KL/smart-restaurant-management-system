@@ -142,5 +142,71 @@ class AdminStaffTestCase(unittest.TestCase):
         response = self.client.get('/admin/staff')
         self.assertEqual(response.status_code, 403)
 
+    def test_super_admin_can_create_staff(self):
+        self.login('admin@test.com', 'password')
+        # GET form
+        resp_get = self.client.get('/admin/staff/create')
+        self.assertEqual(resp_get.status_code, 200)
+        self.assertIn(b'Add Staff', resp_get.data)
+
+        # POST valid staff
+        resp_post = self.client.post('/admin/staff/create', data={
+            'name': 'New Admin Staff',
+            'email': 'newstaff@test.com',
+            'password': 'password123',
+            'phone': '9876543210',
+            'designation': 'Supervisor',
+            'restaurant_id': self.r1.id
+        }, follow_redirects=True)
+        self.assertEqual(resp_post.status_code, 200)
+        self.assertIn(b'Staff account created successfully', resp_post.data)
+
+        new_user = User.query.filter_by(email='newstaff@test.com').first()
+        self.assertIsNotNone(new_user)
+        self.assertEqual(new_user.role, 'restaurant_staff')
+        self.assertTrue(new_user.check_password('password123'))
+
+        new_staff = RestaurantStaff.query.filter_by(user_id=new_user.id).first()
+        self.assertIsNotNone(new_staff)
+        self.assertEqual(new_staff.restaurant_id, self.r1.id)
+        self.assertEqual(new_staff.designation, 'Supervisor')
+
+    def test_super_admin_create_staff_validation(self):
+        self.login('admin@test.com', 'password')
+        # Duplicate email
+        resp = self.client.post('/admin/staff/create', data={
+            'name': 'Duplicate Staff',
+            'email': 'staff1@test.com',
+            'password': 'password123',
+            'restaurant_id': self.r1.id
+        }, follow_redirects=True)
+        self.assertIn(b'Email is already registered.', resp.data)
+
+        # Missing required fields
+        resp2 = self.client.post('/admin/staff/create', data={
+            'name': '',
+            'email': '',
+            'password': '',
+            'restaurant_id': ''
+        }, follow_redirects=True)
+        self.assertIn(b'Name, email, password, and assigned restaurant are required.', resp2.data)
+
+    def test_non_admin_cannot_access_create_staff(self):
+        self.login('owner1@test.com', 'password')
+        resp_owner = self.client.get('/admin/staff/create')
+        self.assertEqual(resp_owner.status_code, 403)
+
+        self.login('customer@test.com', 'password')
+        resp_cust = self.client.get('/admin/staff/create')
+        self.assertEqual(resp_cust.status_code, 403)
+
+    def test_admin_staff_templates_responsive_and_no_literal_none(self):
+        self.login('admin@test.com', 'password')
+        resp = self.client.get('/admin/staff')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'table-responsive', resp.data)
+        # Should not have unhandled None in designation or restaurant columns
+        self.assertNotIn(b'<td>None</td>', resp.data)
+
 if __name__ == '__main__':
     unittest.main()
