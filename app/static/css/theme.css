@@ -617,3 +617,1515 @@ select:focus {
         padding: 0.65rem 0.5rem !important;
     }
 }
+
+/* ===================================================================
+   SaaS Dashboard Components & Visual Upgrades
+   =================================================================== */
+
+/* Page Header */
+.dashboard-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-title-group h2 {
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+    color: var(--black-header);
+}
+
+.dashboard-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* SaaS Action Toolbar */
+.smart-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.smart-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #ffffff;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-sm);
+}
+
+.smart-action-btn i {
+    color: var(--gold-dark);
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.smart-action-btn:hover {
+    background: var(--bg-cream-alt);
+    color: var(--black-header);
+    border-color: var(--gold-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(197, 155, 39, 0.15);
+}
+
+.smart-action-btn:hover i {
+    transform: scale(1.15);
+    color: var(--gold-hover);
+}
+
+/* KPI Metric Cards */
+.smart-kpi-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.35rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-sm);
+}
+
+.smart-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.smart-kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(197, 155, 39, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.smart-kpi-card:hover::before {
+    opacity: 1;
+}
+
+.smart-kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.smart-kpi-label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.smart-kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.smart-kpi-icon.icon-gold {
+    background: var(--gold-light);
+    color: var(--gold-dark);
+}
+
+.smart-kpi-icon.icon-dark {
+    background: #2a2a2a;
+    color: var(--gold-primary);
+}
+
+.smart-kpi-icon.icon-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.smart-kpi-icon.icon-info {
+    background: #e1f5fe;
+    color: #0288d1;
+}
+
+.smart-kpi-icon.icon-warning {
+    background: #fff8e1;
+    color: #f57f17;
+}
+
+.smart-kpi-value {
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--black-header);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+}
+
+.smart-kpi-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.smart-kpi-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+}
+
+/* SaaS Standard Cards */
+.smart-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smart-card:hover {
+    border-color: rgba(197, 155, 39, 0.3);
+}
+
+.smart-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.1rem 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.smart-card-header.header-dark {
+    background: var(--black-header);
+    color: #ffffff;
+    border-bottom: 2px solid var(--gold-primary);
+}
+
+.smart-card-header.header-dark h4,
+.smart-card-header.header-dark h3 {
+    color: #ffffff;
+}
+
+.smart-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.smart-card-body {
+    padding: 1.35rem;
+}
+
+/* Charts Containers */
+.smart-chart-wrapper {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
+
+.smart-chart-wrapper-tall {
+    position: relative;
+    height: 310px;
+    width: 100%;
+}
+
+/* Table Floor Overview Grid */
+.table-floor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.85rem;
+}
+
+.table-token {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 0.75rem;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+}
+
+.table-token:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.table-token-num {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--black-header);
+    margin-bottom: 0.2rem;
+}
+
+.table-token-cap {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.table-token-status {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.table-status-available {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.table-status-occupied {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.table-status-reserved {
+    background: #fff8e1;
+    color: #b78103;
+    border: 1px solid #ffe082;
+}
+
+.table-status-maintenance {
+    background: #eceff1;
+    color: #455a64;
+    border: 1px solid #cfd8dc;
+}
+
+/* Order Pipeline Stepper (Customer View) */
+.order-stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin: 1.25rem 0 0.5rem;
+}
+
+.order-stepper::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 24px;
+    right: 24px;
+    height: 3px;
+    background: #e0ded9;
+    z-index: 1;
+}
+
+.order-stepper-progress {
+    position: absolute;
+    top: 14px;
+    left: 24px;
+    height: 3px;
+    background: var(--gold-primary);
+    z-index: 2;
+    transition: width 0.4s ease;
+}
+
+.stepper-step {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 60px;
+}
+
+.stepper-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    transition: all 0.25s ease;
+}
+
+.stepper-step.completed .stepper-dot {
+    background: var(--gold-primary);
+    border-color: var(--gold-primary);
+    color: #ffffff;
+}
+
+.stepper-step.current .stepper-dot {
+    background: #ffffff;
+    border-color: var(--gold-primary);
+    color: var(--gold-dark);
+    box-shadow: 0 0 0 4px rgba(197, 155, 39, 0.2);
+}
+
+.stepper-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+    text-transform: capitalize;
+}
+
+.stepper-step.current .stepper-label {
+    color: var(--gold-dark);
+    font-weight: 700;
+}
+
+/* Kitchen Operational Deck (Staff View) */
+.kitchen-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.kitchen-col {
+    background: #f7f6f2;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    min-height: 240px;
+}
+
+.kitchen-col-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.kitchen-col-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.kitchen-item-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    margin-bottom: 0.65rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.kitchen-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    border-color: var(--gold-primary);
+}
+
+/* Empty States */
+.smart-empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: #ffffff;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+}
+
+.smart-empty-icon {
+    font-size: 2.75rem;
+    color: var(--gold-dark);
+    opacity: 0.85;
+    margin-bottom: 0.75rem;
+}
+
+.smart-empty-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--black-header);
+    margin-bottom: 0.35rem;
+}
+
+.smart-empty-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    max-width: 420px;
+    margin: 0 auto 1.25rem;
+}
+
+/* Staggered Entrance Animations */
+.smart-animate-up {
+    animation: smartFadeSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes smartFadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .smart-animate-up {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .smart-kpi-card,
+    .table-token,
+    .smart-action-btn,
+    .kitchen-item-card,
+    .restaurant-card-saas,
+    .cuisine-chip {
+        transition: none !important;
+    }
+}
+
+/* ==========================================================================
+   Customer Discovery & Food Ordering Experience (Swiggy / Zomato Inspired)
+   ========================================================================== */
+
+/* Discovery Hero Banner */
+.discovery-hero {
+    background: linear-gradient(135deg, #141414 0%, #1e1e1e 60%, #2a2416 100%);
+    border: 1px solid rgba(197, 155, 39, 0.25);
+    border-radius: var(--radius-lg);
+    padding: 2.25rem 2rem;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.discovery-hero::after {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(197, 155, 39, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.discovery-hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+}
+
+.discovery-hero-title .highlight-gold {
+    color: var(--gold-primary);
+}
+
+.discovery-hero-subtitle {
+    color: #c7c4be;
+    font-size: 1rem;
+    max-width: 620px;
+    margin-bottom: 1.5rem;
+}
+
+/* Search Bar Container */
+.discovery-search-box {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.discovery-search-box .form-control,
+.discovery-search-box .form-select {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    font-size: 0.95rem;
+}
+
+.discovery-search-box .form-control:focus,
+.discovery-search-box .form-select:focus {
+    box-shadow: none;
+    background: #faf8f5;
+}
+
+.discovery-search-divider {
+    width: 1px;
+    background-color: var(--border-color);
+    height: 32px;
+    align-self: center;
+}
+
+/* Cuisine & Category Filter Chips */
+.cuisine-chip-bar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    scrollbar-width: thin;
+}
+
+.cuisine-chip-bar::-webkit-scrollbar {
+    height: 4px;
+}
+
+.cuisine-chip-bar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.cuisine-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--black-header);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: var(--transition-fast);
+}
+
+.cuisine-chip:hover {
+    background: var(--bg-cream-alt);
+    border-color: var(--gold-primary);
+    color: var(--gold-dark);
+}
+
+.cuisine-chip.active {
+    background: var(--black-header);
+    color: var(--gold-primary);
+    border-color: var(--gold-primary);
+    font-weight: 600;
+}
+
+/* Restaurant Card SaaS */
+.restaurant-card-saas {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.restaurant-card-saas:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    border-color: rgba(197, 155, 39, 0.4);
+}
+
+.restaurant-card-media {
+    height: 170px;
+    width: 100%;
+    position: relative;
+    background: linear-gradient(135deg, #1e1e1e 0%, #2a2416 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.restaurant-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.restaurant-card-saas:hover .restaurant-card-media img {
+    transform: scale(1.04);
+}
+
+.restaurant-card-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(4px);
+    color: var(--gold-primary);
+    border: 1px solid rgba(197, 155, 39, 0.35);
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.restaurant-card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.restaurant-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--black-header);
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.01em;
+}
+
+.restaurant-card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.restaurant-card-title a:hover {
+    color: var(--gold-dark);
+}
+
+.restaurant-card-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.restaurant-card-desc {
+    font-size: 0.875rem;
+    color: #4a4a4a;
+    line-height: 1.45;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.restaurant-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.restaurant-card-actions .btn {
+    flex: 1;
+    font-size: 0.825rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Live Operational Alert Banner */
+.live-ops-banner {
+    background: #ffffff;
+    border: 1px solid rgba(197, 155, 39, 0.3);
+    border-left: 4px solid var(--gold-primary);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+/* Mobile Customer Bottom Navigation Bar */
+.customer-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #141414;
+    border-top: 1px solid rgba(197, 155, 39, 0.25);
+    z-index: 1030;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.45rem 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.customer-bottom-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #a0a0a0;
+    font-size: 0.7rem;
+    font-weight: 500;
+    transition: color 0.15s ease;
+    position: relative;
+    padding: 0.2rem 0.5rem;
+}
+
+.customer-bottom-item i {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+}
+
+.customer-bottom-item:hover,
+.customer-bottom-item.active {
+    color: var(--gold-primary);
+}
+
+.customer-bottom-badge {
+    position: absolute;
+    top: -2px;
+    right: 6px;
+    background: var(--gold-primary);
+    color: #141414;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 50px;
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+}
+
+@media (max-width: 991.98px) {
+    main {
+        padding-bottom: 60px; /* offset for bottom bar */
+    }
+}
+
+/* ===================================================================
+   Interactive Discovery, Gallery Lightbox & Reservation Wizard
+   =================================================================== */
+
+/* Discovery Hero with Background Photo */
+.discovery-hero-banner {
+    position: relative;
+    background: linear-gradient(135deg, rgba(20, 20, 20, 0.92) 0%, rgba(30, 30, 30, 0.82) 100%),
+                url('/static/images/hero_dining.jpg') center/cover no-repeat;
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 2.5rem;
+    color: #ffffff;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(197, 155, 39, 0.3);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+}
+
+.discovery-hero-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: radial-gradient(circle at 85% 20%, rgba(197, 155, 39, 0.22), transparent 60%);
+    pointer-events: none;
+}
+
+.discovery-hero-banner h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.discovery-hero-banner .hero-lead {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 680px;
+    margin-top: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+/* Enhanced Restaurant Photo Cards */
+.restaurant-card-saas {
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.restaurant-card-saas:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.09);
+    border-color: rgba(197, 155, 39, 0.45);
+}
+
+.restaurant-card-media {
+    position: relative;
+    height: 190px;
+    background: #1e1e1e;
+    overflow: hidden;
+}
+
+.restaurant-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.restaurant-card-saas:hover .restaurant-card-media img {
+    transform: scale(1.06);
+}
+
+.restaurant-card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(20, 20, 20, 0.85);
+    color: #ffffff;
+    backdrop-filter: blur(4px);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.restaurant-featured-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, #c59b27, #e6b93d);
+    color: #141414;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+    border-radius: 50px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.restaurant-card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.restaurant-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.restaurant-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    margin-bottom: 0.65rem;
+}
+
+.restaurant-meta-row .status-open {
+    color: #198754;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.restaurant-meta-row .status-open::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: #198754;
+    border-radius: 50%;
+}
+
+.restaurant-cuisine-tag {
+    background: var(--bg-cream-alt);
+    color: var(--text-secondary);
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+.restaurant-card-actions {
+    display: flex;
+    gap: 0.45rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.restaurant-card-actions .btn {
+    font-size: 0.775rem;
+    font-weight: 600;
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+/* Lightbox Modal for Photo Gallery */
+.gallery-thumbnail {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    height: 180px;
+    cursor: pointer;
+    background: #1a1a1a;
+    border: 1px solid var(--border-color);
+}
+
+.gallery-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.gallery-thumbnail:hover img {
+    transform: scale(1.08);
+}
+
+.gallery-thumbnail .gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 20, 20, 0.45);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    transition: opacity 0.25s ease;
+    gap: 0.35rem;
+}
+
+.gallery-thumbnail:hover .gallery-overlay {
+    opacity: 1;
+}
+
+.lightbox-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10, 10, 10, 0.94);
+    backdrop-filter: blur(10px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 1.5rem;
+}
+
+.lightbox-backdrop.active {
+    display: flex;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 82vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-content img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: var(--radius-md);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lightbox-caption {
+    margin-top: 1rem;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.lightbox-btn-close {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: background 0.2s;
+    z-index: 2010;
+}
+
+.lightbox-btn-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.lightbox-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.4rem;
+    transition: background 0.2s;
+    z-index: 2010;
+}
+
+.lightbox-nav-btn:hover {
+    background: var(--gold-primary);
+    color: #141414;
+}
+
+.lightbox-nav-btn.prev { left: 25px; }
+.lightbox-nav-btn.next { right: 25px; }
+
+/* Interactive Multi-Step Reservation Wizard */
+.wizard-header-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: var(--black-surface);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: 2px solid var(--gold-primary);
+    overflow-x: auto;
+}
+
+.wizard-step-node {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.wizard-step-node.active {
+    color: var(--gold-primary);
+}
+
+.wizard-step-node.completed {
+    color: #ffffff;
+}
+
+.wizard-step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.775rem;
+    font-weight: 700;
+    transition: background 0.2s, color 0.2s;
+}
+
+.wizard-step-node.active .wizard-step-num {
+    background: var(--gold-primary);
+    color: #141414;
+}
+
+.wizard-step-node.completed .wizard-step-num {
+    background: #198754;
+    color: #ffffff;
+}
+
+.wizard-step-divider {
+    flex-grow: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 0.85rem;
+    min-width: 20px;
+}
+
+/* Stepper Control for Guests */
+.guest-stepper-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--bg-cream-alt);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.guest-stepper-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.guest-stepper-btn:hover:not(:disabled) {
+    background: var(--gold-primary);
+    color: #141414;
+    border-color: var(--gold-primary);
+}
+
+.guest-stepper-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.guest-count-display {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 80px;
+    text-align: center;
+}
+
+/* Quick Party Size Pills */
+.party-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.party-pill-btn {
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    border-radius: 50px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.party-pill-btn:hover,
+.party-pill-btn.active {
+    background: var(--gold-light);
+    border-color: var(--gold-primary);
+    color: var(--gold-dark);
+}
+
+/* Time Slot Selection Cards */
+.slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.85rem;
+}
+
+.slot-card {
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 0.85rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+}
+
+.slot-card.available:hover {
+    border-color: var(--gold-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(197, 155, 39, 0.15);
+}
+
+.slot-card.selected {
+    border-color: var(--gold-primary);
+    background: var(--gold-light);
+    box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.2);
+}
+
+.slot-card.disabled {
+    opacity: 0.45;
+    background: var(--bg-cream-alt);
+    cursor: not-allowed;
+    border-color: var(--border-color);
+}
+
+.slot-time-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.slot-meal-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 0.15rem;
+}
+
+.slot-status-badge {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 50px;
+    margin-top: 0.4rem;
+    display: inline-block;
+}
+
+/* Interactive Table Cards Grid */
+.table-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+.table-select-card {
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 140px;
+}
+
+.table-select-card.available:hover {
+    border-color: var(--gold-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+}
+
+.table-select-card.selected {
+    border-color: var(--gold-primary);
+    background: var(--gold-light);
+    box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.3);
+}
+
+.table-select-card.unavailable {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.table-card-number {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.table-card-capacity {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+/* Live Booking Summary Card */
+.booking-summary-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    position: sticky;
+    top: 90px;
+}
+
+.booking-summary-header {
+    background: var(--black-surface);
+    color: #ffffff;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--gold-primary);
+}
+
+.booking-summary-body {
+    padding: 1.25rem;
+}
+
+.booking-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.9rem;
+}
+
+.booking-summary-row:last-child {
+    border-bottom: none;
+}
+
+.booking-summary-label {
+    color: var(--text-muted);
+}
+
+.booking-summary-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* Menu UI Styles */
+.menu-category-nav-bar {
+    position: sticky;
+    top: 70px;
+    z-index: 100;
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.menu-cat-nav-link {
+    padding: 0.45rem 1rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.menu-cat-nav-link:hover,
+.menu-cat-nav-link.active {
+    background: var(--black-surface);
+    color: var(--gold-primary);
+    text-decoration: none;
+}
+
+.menu-dish-card {
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    height: 100%;
+}
+
+.menu-dish-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    border-color: rgba(197, 155, 39, 0.4);
+}
+
+.menu-dish-photo {
+    width: 110px;
+    height: 110px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #222222;
+}
+
+.menu-dish-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.menu-dish-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+

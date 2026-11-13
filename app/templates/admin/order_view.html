@@ -17,8 +17,11 @@
     {% endwith %}
 
     <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Order #{{ order.id }}</h4>
+            <a href="{{ url_for('admin.view_receipt', order_id=order.id) }}" class="btn btn-sm btn-outline-light" target="_blank">
+                <i class="bi bi-receipt me-1"></i>Print Receipt
+            </a>
         </div>
         <div class="card-body">
             <p><strong>Restaurant:</strong> {{ order.restaurant.name if order.restaurant else 'N/A' }}</p>

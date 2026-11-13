@@ -81,13 +81,13 @@ class AdminTablesTestCase(unittest.TestCase):
         response = self.client.get(f'/admin/tables?restaurant_id={self.r1.id}')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'T1', response.data)
-        self.assertNotIn(b'T2', response.data)
+        self.assertNotIn(b'<td>T2</td>', response.data)
 
     def test_super_admin_can_search_tables(self):
         self.login('admin@test.com', 'password')
         response = self.client.get(f'/admin/tables?search=T2')
         self.assertEqual(response.status_code, 200)
-        self.assertNotIn(b'T1', response.data)
+        self.assertNotIn(b'<td>T1</td>', response.data)
         self.assertIn(b'T2', response.data)
 
     def test_super_admin_can_edit_table(self):

@@ -1,27 +1,108 @@
 {% extends "base.html" %}
-
-{% block title %}Reservation Details{% endblock %}
+{% block title %}Reservation #{{ reservation.id }} | Smart Restaurant{% endblock %}
 
 {% block content %}
-<div class="customer-container">
-    <h2>Reservation Details</h2>
-    
-    <p><strong>Restaurant:</strong> {{ reservation.restaurant.name }}</p>
-    <p><strong>Table:</strong> {{ reservation.table.table_number }}</p>
-    <p><strong>Date:</strong> {{ reservation.reservation_date }}</p>
-    <p><strong>Time:</strong> {{ reservation.start_time.strftime('%H:%M') }} to {{ reservation.end_time.strftime('%H:%M') }}</p>
-    <p><strong>Guests:</strong> {{ reservation.number_of_guests }}</p>
-    <p><strong>Status:</strong> {{ reservation.status|capitalize }}</p>
-    <p><strong>Created At:</strong> {{ reservation.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-    
-    {% if reservation.status in ['pending', 'confirmed'] %}
-    <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=reservation.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <button type="submit" onclick="return confirm('Cancel this reservation?');">Cancel Reservation</button>
-    </form>
-    {% endif %}
-    
-    <br>
-    <a href="{{ url_for('customer.list_reservations') }}">Back to Reservations</a>
+<div class="container mt-4 mb-5" style="max-width: 800px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.dashboard') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.list_reservations') }}" class="text-decoration-none">My Reservations</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Booking #{{ reservation.id }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header Hero Banner -->
+    <div class="discovery-hero smart-animate-up mb-4 py-4 px-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark border border-warning">BOOKING #{{ reservation.id }}</span>
+                    <span class="badge {{ 'bg-success' if reservation.status == 'confirmed' else ('bg-danger' if reservation.status == 'cancelled' else 'bg-warning text-dark') }}">
+                        {{ reservation.status|capitalize }}
+                    </span>
+                </div>
+                <h1 class="h2 text-white fw-bold mb-1">{{ reservation.restaurant.name }}</h1>
+                <div class="text-white-50 small">
+                    <i class="bi bi-geo-alt me-1 text-warning"></i>{{ reservation.restaurant.address or reservation.restaurant.city }}
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-dark border border-secondary text-warning px-3 py-2 fs-6">
+                    Table {{ reservation.table.table_number }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Details Card -->
+    <div class="smart-card smart-animate-up mb-4">
+        <div class="smart-card-header header-dark">
+            <h3 class="smart-card-title text-white mb-0">
+                <i class="bi bi-calendar2-check text-warning me-2"></i>Reservation Details
+            </h3>
+        </div>
+        <div class="smart-card-body p-4">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-6">
+                    <div class="p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                        <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Dining Date</div>
+                        <div class="fw-bold fs-5 text-dark mt-1">{{ reservation.reservation_date }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6">
+                    <div class="p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                        <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Reserved Time Window</div>
+                        <div class="fw-bold fs-5 text-dark mt-1">
+                            {{ reservation.start_time.strftime('%H:%M') }} - {{ reservation.end_time.strftime('%H:%M') }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6">
+                    <div class="p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                        <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Party Size</div>
+                        <div class="fw-bold fs-5 text-dark mt-1">
+                            <i class="bi bi-people text-warning me-1"></i>{{ reservation.number_of_guests }} Guests
+                        </div>
+                        <div class="small text-muted">Table Capacity: {{ reservation.table.capacity }} Seats</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6">
+                    <div class="p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                        <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Booked On</div>
+                        <div class="fw-bold fs-5 text-dark mt-1">{{ reservation.created_at.strftime('%b %d, %Y') }}</div>
+                        <div class="small text-muted">{{ reservation.created_at.strftime('%H:%M UTC') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if reservation.status in ['pending', 'confirmed'] %}
+            <div class="d-flex justify-content-between align-items-center pt-2">
+                <span class="small text-muted">
+                    Need to change plans? You can cancel this table reservation free of charge.
+                </span>
+                <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=reservation.id) }}"
+                      onsubmit="return confirm('Are you sure you want to cancel this reservation?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>Cancel Reservation
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('customer.list_reservations') }}" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Reservations
+        </a>
+        <a href="{{ url_for('customer.restaurant_menu', restaurant_id=reservation.restaurant_id) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-book me-1"></i>Pre-order Food
+        </a>
+    </div>
 </div>
 {% endblock %}

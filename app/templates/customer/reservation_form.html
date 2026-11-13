@@ -1,57 +1,568 @@
 {% extends "base.html" %}
+{% import "customer/_image_helpers.html" as img_helpers %}
 
-{% block title %}Reserve a Table - {{ restaurant.name }}{% endblock %}
+{% block title %}Book a Table | {{ restaurant.name }} | Smart Restaurant{% endblock %}
 
 {% block content %}
-<div class="customer-container">
-    <h2>Reserve a Table at {{ restaurant.name }}</h2>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-        {% for cat, message in messages %}
-          <li class="{{ cat }}">{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+<div class="container mt-4 mb-5 customer-container" style="max-width: 1140px;">
+    <!-- Breadcrumb & Back Link -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.dashboard') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.list_restaurants') }}" class="text-decoration-none">Restaurants</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.restaurant_detail', restaurant_id=restaurant.id) }}" class="text-decoration-none">{{ restaurant.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Book a Table</li>
+        </ol>
+    </nav>
 
-    <form method="POST" action="{{ url_for('customer.create_reservation', restaurant_id=restaurant.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div>
-            <label>Select Table</label>
-            <select name="table_id" required>
-                <option value="">-- Select Table --</option>
-                {% for table in tables %}
-                <option value="{{ table.id }}">Table {{ table.table_number }} (Capacity: {{ table.capacity }})</option>
-                {% endfor %}
-            </select>
+    <!-- Header Hero Card: Step 1 (Restaurant Info) -->
+    <div class="smart-card overflow-hidden mb-4 smart-animate-up" style="border: 1px solid var(--border-color);">
+        <div style="position: relative; height: 180px; background: #1a1a1a;">
+            <img src="{{ img_helpers.get_restaurant_cover(restaurant) }}" alt="{{ restaurant.name }}"
+                 style="width: 100%; height: 100%; object-fit: cover;"
+                 onerror="this.src='/static/images/hero_dining.jpg';">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,15,15,0.92) 0%, rgba(15,15,15,0.45) 100%);"></div>
+            
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem;" class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2">
+                <div>
+                    <span class="badge bg-warning text-dark fw-bold mb-1">
+                        <i class="bi bi-calendar2-check me-1"></i>STEP 1: RESTAURANT SELECTED
+                    </span>
+                    <h1 class="h3 fw-bold text-white mb-0">{{ restaurant.name }}</h1>
+                    <div class="text-white-50 small mt-1">
+                        <i class="bi bi-geo-alt text-warning me-1"></i>{{ restaurant.address or restaurant.city }} &bull; Open 10:00 AM &ndash; 10:00 PM
+                    </div>
+                </div>
+                <div>
+                    <span class="badge bg-success bg-opacity-75 text-white px-3 py-2">
+                        <i class="bi bi-check2-circle me-1"></i>Instant Auto-Confirmation
+                    </span>
+                </div>
+            </div>
         </div>
-        
-        <div>
-            <label>Reservation Date</label>
-            <input type="date" name="reservation_date" required>
+    </div>
+
+    <!-- Multi-Step Booking Form -->
+    <form id="reservation-booking-form" method="POST" action="{{ url_for('customer.create_reservation', restaurant_id=restaurant.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="row g-4">
+            <!-- Left Column: Interactive Steps 2 to 5 -->
+            <div class="col-12 col-lg-8">
+                <!-- Wizard Navigation Header Bar -->
+                <div class="wizard-header-steps mb-4">
+                    <div class="wizard-step-node completed" id="step-node-1">
+                        <span class="wizard-step-num"><i class="bi bi-check"></i></span>
+                        <span>1. Venue</span>
+                    </div>
+                    <div class="wizard-step-divider"></div>
+
+                    <div class="wizard-step-node active" id="step-node-2">
+                        <span class="wizard-step-num">2</span>
+                        <span>2. Date</span>
+                    </div>
+                    <div class="wizard-step-divider"></div>
+
+                    <div class="wizard-step-node" id="step-node-3">
+                        <span class="wizard-step-num">3</span>
+                        <span>3. Guests</span>
+                    </div>
+                    <div class="wizard-step-divider"></div>
+
+                    <div class="wizard-step-node" id="step-node-4">
+                        <span class="wizard-step-num">4</span>
+                        <span>4. Time Slot</span>
+                    </div>
+                    <div class="wizard-step-divider"></div>
+
+                    <div class="wizard-step-node" id="step-node-5">
+                        <span class="wizard-step-num">5</span>
+                        <span>5. Table</span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Date Selection Card -->
+                <div class="smart-card mb-4 smart-animate-up" id="card-step-date">
+                    <div class="smart-card-header header-dark d-flex justify-content-between align-items-center">
+                        <h2 class="h6 smart-card-title text-white mb-0">
+                            <i class="bi bi-calendar-date text-warning me-2"></i>Step 2: Select Dining Date
+                        </h2>
+                        <span class="small text-white-50">Past dates disabled</span>
+                    </div>
+                    <div class="smart-card-body p-4">
+                        <!-- Quick Date Shortcuts -->
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary active quick-date-btn" data-offset="0">
+                                <i class="bi bi-calendar-event me-1"></i>Today
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-date-btn" data-offset="1">
+                                <i class="bi bi-calendar-plus me-1"></i>Tomorrow
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-date-btn" data-offset="2">
+                                Day After Tomorrow
+                            </button>
+                        </div>
+
+                        <div class="row align-items-center g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="reservation_date" class="form-label fw-bold small text-muted text-uppercase">
+                                    Reservation Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" id="reservation_date" name="reservation_date" class="form-control form-control-lg"
+                                       required onchange="handleDateOrGuestsChange()">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                                    <div class="small fw-bold text-dark"><i class="bi bi-info-circle text-warning me-1"></i>Advance Booking Window</div>
+                                    <div class="small text-muted mt-1">Bookings are open up to 30 days in advance. Automatic seating confirmation is applied instantly.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Guest Count Stepper Card -->
+                <div class="smart-card mb-4 smart-animate-up" id="card-step-guests">
+                    <div class="smart-card-header header-dark">
+                        <h2 class="h6 smart-card-title text-white mb-0">
+                            <i class="bi bi-people text-warning me-2"></i>Step 3: Select Party Size
+                        </h2>
+                    </div>
+                    <div class="smart-card-body p-4">
+                        <div class="guest-stepper-box mb-3">
+                            <button type="button" class="guest-stepper-btn" id="btn-guest-minus" onclick="adjustGuests(-1)" aria-label="Decrease guests">
+                                &minus;
+                            </button>
+                            <div>
+                                <div class="guest-count-display" id="guest-count-label">2</div>
+                                <div class="text-center small text-muted text-uppercase fw-semibold" id="party-type-label">Dining Duo</div>
+                            </div>
+                            <button type="button" class="guest-stepper-btn" id="btn-guest-plus" onclick="adjustGuests(1)" aria-label="Increase guests">
+                                &#43;
+                            </button>
+                        </div>
+
+                        <!-- Synchronized Form Input -->
+                        <input type="hidden" id="number_of_guests" name="number_of_guests" value="2" min="1" required>
+
+                        <!-- Quick Party Size Pills -->
+                        <div class="party-pills">
+                            <button type="button" class="party-pill-btn" onclick="setGuests(1)">1 Guest</button>
+                            <button type="button" class="party-pill-btn active" onclick="setGuests(2)">2 Guests</button>
+                            <button type="button" class="party-pill-btn" onclick="setGuests(4)">4 Guests</button>
+                            <button type="button" class="party-pill-btn" onclick="setGuests(6)">6 Guests</button>
+                            <button type="button" class="party-pill-btn" onclick="setGuests(8)">8 Guests</button>
+                            <button type="button" class="party-pill-btn" onclick="setGuests(10)">10+ Guests</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Time Slot Selection Card -->
+                <div class="smart-card mb-4 smart-animate-up" id="card-step-time">
+                    <div class="smart-card-header header-dark d-flex justify-content-between align-items-center">
+                        <h2 class="h6 smart-card-title text-white mb-0">
+                            <i class="bi bi-clock-history text-warning me-2"></i>Step 4: Select Dining Time Slot
+                        </h2>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="custom-time-toggle" onchange="toggleCustomTime()">
+                            <label class="form-check-label text-white-50 small" for="custom-time-toggle">Custom Time</label>
+                        </div>
+                    </div>
+                    <div class="smart-card-body p-4">
+                        <!-- Live Slots Grid -->
+                        <div id="slots-container">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="small text-muted fw-semibold text-uppercase">Available 1-Hour Dining Slots</span>
+                                <span id="slot-loading-indicator" class="spinner-border spinner-border-sm text-warning d-none" role="status"></span>
+                            </div>
+                            <div class="slot-grid" id="slots-grid">
+                                <!-- Dynamically loaded from /api/restaurants/<id>/slot-availability -->
+                            </div>
+                        </div>
+
+                        <!-- Custom Time Inputs (Hidden by default unless toggled) -->
+                        <div id="custom-time-container" class="d-none mt-3 p-3 rounded" style="background: var(--bg-cream-alt); border: 1px solid var(--border-color);">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Start Time</label>
+                                    <input type="time" id="start_time" name="start_time" class="form-control" value="18:00" required onchange="onCustomTimeChanged()">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">End Time</label>
+                                    <input type="time" id="end_time" name="end_time" class="form-control" value="19:00" required onchange="onCustomTimeChanged()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Table Selection Card -->
+                <div class="smart-card mb-4 smart-animate-up" id="card-step-table">
+                    <div class="smart-card-header header-dark d-flex justify-content-between align-items-center">
+                        <h2 class="h6 smart-card-title text-white mb-0">
+                            <i class="bi bi-grid-3x3 text-warning me-2"></i>Step 5: Select Seating Table
+                        </h2>
+                        <span class="small text-white-50" id="table-count-label">Checking available tables...</span>
+                    </div>
+                    <div class="smart-card-body p-4">
+                        <p class="small text-muted mb-3">
+                            Choose an available table matching your party size. Tables marked in gold are confirmed free for your selected time window.
+                        </p>
+
+                        <!-- Synchronized Hidden Select for Standard Form Submission & Fallback -->
+                        <div class="visually-hidden">
+                            <select name="table_id" id="table_id" required>
+                                <option value="">-- Select Table --</option>
+                                {% for table in tables %}
+                                <option value="{{ table.id }}" data-capacity="{{ table.capacity }}" data-number="{{ table.table_number }}">
+                                    Table {{ table.table_number }} (Capacity: {{ table.capacity }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Interactive Table Cards Grid -->
+                        <div class="table-cards-grid" id="interactive-tables-grid">
+                            {% for table in tables %}
+                            <div class="table-select-card available" id="table-card-{{ table.id }}"
+                                 onclick="selectTable('{{ table.id }}', '{{ table.table_number }}', {{ table.capacity }})">
+                                <div class="badge bg-dark border border-secondary text-warning mb-2" id="table-type-{{ table.id }}">
+                                    {% if table.capacity <= 2 %}Duo Booth{% elif table.capacity <= 4 %}Family 4{% elif table.capacity <= 6 %}Large 6{% else %}Banquet{% endif %}
+                                </div>
+                                <div class="table-card-number">Table {{ table.table_number }}</div>
+                                <div class="table-card-capacity"><i class="bi bi-person me-1"></i>Seats up to {{ table.capacity }}</div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success" id="table-badge-{{ table.id }}">Available</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Step 6 (Booking Summary & Confirm Action) -->
+            <div class="col-12 col-lg-4">
+                <div class="booking-summary-card smart-animate-up">
+                    <div class="booking-summary-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark fw-bold">STEP 6</span>
+                            <h3 class="h6 smart-card-title text-white mb-0">Reservation Summary</h3>
+                        </div>
+                    </div>
+
+                    <div class="booking-summary-body">
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Restaurant</span>
+                            <span class="booking-summary-value text-truncate" style="max-width: 180px;">{{ restaurant.name }}</span>
+                        </div>
+
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Dining Date</span>
+                            <span class="booking-summary-value text-primary" id="summary-date">Today</span>
+                        </div>
+
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Time Window</span>
+                            <span class="booking-summary-value" id="summary-time">18:00 &ndash; 19:00</span>
+                        </div>
+
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Party Size</span>
+                            <span class="booking-summary-value" id="summary-guests">2 Guests</span>
+                        </div>
+
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Assigned Table</span>
+                            <span class="booking-summary-value text-success" id="summary-table">Not selected</span>
+                        </div>
+
+                        <div class="booking-summary-row">
+                            <span class="booking-summary-label">Reservation Fee</span>
+                            <span class="booking-summary-value text-success">₹0.00 (Complimentary)</span>
+                        </div>
+
+                        <div class="alert alert-success mt-3 mb-3 p-2 small border-0" style="background: rgba(25, 135, 84, 0.1); color: #198754;">
+                            <i class="bi bi-shield-check me-1"></i><strong>Instant Booking Guarantee:</strong> Your reservation is immediately confirmed upon clicking below.
+                        </div>
+
+                        <button type="submit" id="btn-submit-booking" class="btn btn-primary w-100 py-3 fw-bold fs-6 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-calendar-check-fill"></i> Confirm & Book Table
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('customer.restaurant_detail', restaurant_id=restaurant.id) }}" class="small text-muted text-decoration-none">
+                                &larr; Cancel and return to restaurant info
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div>
-            <label>Start Time</label>
-            <input type="time" name="start_time" required>
-        </div>
-        
-        <div>
-            <label>End Time</label>
-            <input type="time" name="end_time" required>
-        </div>
-        
-        <div>
-            <label>Number of Guests</label>
-            <input type="number" name="number_of_guests" min="1" required>
-        </div>
-        
-        <button type="submit">Submit Reservation</button>
     </form>
-    
-    <br>
-    <a href="{{ url_for('customer.restaurant_detail', restaurant_id=restaurant.id) }}">Cancel</a>
 </div>
+
+<script>
+const RESTAURANT_ID = {{ restaurant.id }};
+let selectedTableId = null;
+let selectedTableName = null;
+let selectedTableCapacity = null;
+
+// Initialize Date Picker to Today's Local Date
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const dateInput = document.getElementById('reservation_date');
+    dateInput.min = todayStr;
+    dateInput.value = todayStr;
+
+    // Default select first available table from select element if present
+    const selectElem = document.getElementById('table_id');
+    if (selectElem && selectElem.options.length > 1) {
+        const firstOpt = selectElem.options[1];
+        selectTable(firstOpt.value, firstOpt.dataset.number || firstOpt.text, parseInt(firstOpt.dataset.capacity) || 2);
+    }
+
+    // Load available slots
+    fetchSlotAvailability();
+    updateSummary();
+});
+
+// Quick Date Shortcuts
+document.querySelectorAll('.quick-date-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.quick-date-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const offset = parseInt(this.dataset.offset || 0);
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        document.getElementById('reservation_date').value = `${yyyy}-${mm}-${dd}`;
+
+        handleDateOrGuestsChange();
+    });
+});
+
+// Guest Stepper Controls
+function adjustGuests(delta) {
+    const input = document.getElementById('number_of_guests');
+    let count = parseInt(input.value) + delta;
+    if (count < 1) count = 1;
+    if (count > 20) count = 20;
+    setGuests(count);
+}
+
+function setGuests(count) {
+    document.getElementById('number_of_guests').value = count;
+    document.getElementById('guest-count-label').textContent = count;
+
+    // Party label
+    const partyLabel = document.getElementById('party-type-label');
+    if (count === 1) partyLabel.textContent = "Solo Diner";
+    else if (count === 2) partyLabel.textContent = "Dining Duo";
+    else if (count <= 4) partyLabel.textContent = "Small Party / Family";
+    else if (count <= 6) partyLabel.textContent = "Group Dining";
+    else partyLabel.textContent = "Large Banquet Gathering";
+
+    // Update pills active state
+    document.querySelectorAll('.party-pill-btn').forEach(pill => {
+        const match = pill.textContent.startsWith(String(count));
+        pill.classList.toggle('active', match);
+    });
+
+    // Toggle minus button
+    document.getElementById('btn-guest-minus').disabled = (count <= 1);
+
+    handleDateOrGuestsChange();
+}
+
+function handleDateOrGuestsChange() {
+    fetchSlotAvailability();
+    fetchTableAvailability();
+    updateSummary();
+}
+
+// Fetch Slots Live Availability from Backend API
+function fetchSlotAvailability() {
+    const dateVal = document.getElementById('reservation_date').value;
+    const guestsVal = document.getElementById('number_of_guests').value;
+    const loading = document.getElementById('slot-loading-indicator');
+    if (loading) loading.classList.remove('d-none');
+
+    fetch(`/api/restaurants/${RESTAURANT_ID}/slot-availability?date=${dateVal}&guests=${guestsVal}`)
+        .then(res => res.json())
+        .then(data => {
+            if (loading) loading.classList.add('d-none');
+            renderSlots(data.slots || []);
+        })
+        .catch(err => {
+            if (loading) loading.classList.add('d-none');
+            console.warn('Live slot fetch error, using default slots', err);
+        });
+}
+
+function renderSlots(slots) {
+    const grid = document.getElementById('slots-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const startTimeVal = document.getElementById('start_time').value;
+
+    slots.forEach(slot => {
+        const card = document.createElement('div');
+        const isSelected = (slot.start === startTimeVal);
+        card.className = `slot-card ${slot.is_available ? 'available' : 'disabled'} ${isSelected ? 'selected' : ''}`;
+        
+        card.innerHTML = `
+            <div class="slot-time-text">${slot.label}</div>
+            <div class="slot-meal-tag">${slot.meal}</div>
+            <div>
+                <span class="slot-status-badge ${slot.is_available ? 'bg-success text-white' : 'bg-secondary text-white'}">
+                    ${slot.is_available ? `${slot.available_tables} tables free` : (slot.is_past ? 'Past time' : 'Fully Booked')}
+                </span>
+            </div>
+        `;
+
+        if (slot.is_available) {
+            card.onclick = () => selectSlot(slot.start, slot.end, card);
+        }
+
+        grid.appendChild(card);
+    });
+}
+
+function selectSlot(start, end, cardElem) {
+    document.getElementById('start_time').value = start;
+    document.getElementById('end_time').value = end;
+
+    document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'));
+    if (cardElem) cardElem.classList.add('selected');
+
+    fetchTableAvailability();
+    updateSummary();
+}
+
+function toggleCustomTime() {
+    const isCustom = document.getElementById('custom-time-toggle').checked;
+    document.getElementById('custom-time-container').classList.toggle('d-none', !isCustom);
+    document.getElementById('slots-container').classList.toggle('d-none', isCustom);
+}
+
+function onCustomTimeChanged() {
+    fetchTableAvailability();
+    updateSummary();
+}
+
+// Fetch Table Live Availability for Current Window
+function fetchTableAvailability() {
+    const dateVal = document.getElementById('reservation_date').value;
+    const startVal = document.getElementById('start_time').value;
+    const endVal = document.getElementById('end_time').value;
+    const guestsVal = document.getElementById('number_of_guests').value;
+
+    fetch(`/api/restaurants/${RESTAURANT_ID}/table-availability?date=${dateVal}&start_time=${startVal}&end_time=${endVal}&guests=${guestsVal}`)
+        .then(res => res.json())
+        .then(data => {
+            applyTableAvailability(data.tables || []);
+        })
+        .catch(err => {
+            console.warn('Table availability check error', err);
+        });
+}
+
+function applyTableAvailability(tables) {
+    const countLabel = document.getElementById('table-count-label');
+    let freeCount = 0;
+
+    tables.forEach(t => {
+        const card = document.getElementById(`table-card-${t.id}`);
+        const badge = document.getElementById(`table-badge-${t.id}`);
+        if (!card) return;
+
+        if (t.selectable) {
+            freeCount++;
+            card.className = `table-select-card available ${selectedTableId == t.id ? 'selected' : ''}`;
+            if (badge) {
+                badge.className = 'badge bg-success';
+                badge.textContent = 'Available';
+            }
+        } else if (!t.fits_capacity) {
+            card.className = 'table-select-card unavailable';
+            if (badge) {
+                badge.className = 'badge bg-secondary';
+                badge.textContent = `Needs ${document.getElementById('number_of_guests').value} seats`;
+            }
+        } else {
+            card.className = 'table-select-card unavailable';
+            if (badge) {
+                badge.className = 'badge bg-danger';
+                badge.textContent = 'Booked';
+            }
+        }
+    });
+
+    if (countLabel) {
+        countLabel.textContent = `${freeCount} table(s) available for selected slot`;
+    }
+}
+
+// Table Selection Handler
+function selectTable(id, number, capacity) {
+    selectedTableId = id;
+    selectedTableName = number;
+    selectedTableCapacity = capacity;
+
+    const selectElem = document.getElementById('table_id');
+    if (selectElem) selectElem.value = id;
+
+    document.querySelectorAll('.table-select-card').forEach(c => {
+        if (!c.classList.contains('unavailable')) {
+            c.classList.remove('selected');
+        }
+    });
+
+    const activeCard = document.getElementById(`table-card-${id}`);
+    if (activeCard && !activeCard.classList.contains('unavailable')) {
+        activeCard.classList.add('selected');
+    }
+
+    updateSummary();
+}
+
+// Live Summary Updater
+function updateSummary() {
+    const dateVal = document.getElementById('reservation_date').value;
+    const startVal = document.getElementById('start_time').value;
+    const endVal = document.getElementById('end_time').value;
+    const guestsVal = document.getElementById('number_of_guests').value;
+
+    const summaryDate = document.getElementById('summary-date');
+    if (summaryDate) summaryDate.textContent = dateVal || 'Select Date';
+
+    const summaryTime = document.getElementById('summary-time');
+    if (summaryTime) summaryTime.textContent = `${startVal || '18:00'} - ${endVal || '19:00'}`;
+
+    const summaryGuests = document.getElementById('summary-guests');
+    if (summaryGuests) summaryGuests.textContent = `${guestsVal} Guest${guestsVal > 1 ? 's' : ''}`;
+
+    const summaryTable = document.getElementById('summary-table');
+    if (summaryTable) {
+        if (selectedTableName) {
+            summaryTable.textContent = `Table ${selectedTableName} (${selectedTableCapacity} Seats)`;
+            summaryTable.className = 'booking-summary-value text-success';
+        } else {
+            summaryTable.textContent = 'Choose table above';
+            summaryTable.className = 'booking-summary-value text-danger';
+        }
+    }
+}
+</script>
 {% endblock %}

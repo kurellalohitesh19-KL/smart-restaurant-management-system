@@ -115,5 +115,28 @@ class CustomerDiscoveryTestCase(unittest.TestCase):
         resp = self.client.get('/customer/restaurants', follow_redirects=True)
         self.assertIn(b'Please log in', resp.data)
 
+    def test_restaurants_page_does_not_render_map_while_listing_and_search_work(self):
+        self._login('customer@test.com')
+        resp = self.client.get('/customer/restaurants')
+        self.assertEqual(resp.status_code, 200)
+
+        # Verify Google Map container, API scripts, and initialization are completely absent
+        self.assertNotIn(b'id="map"', resp.data)
+        self.assertNotIn(b'maps.googleapis.com', resp.data)
+        self.assertNotIn(b'initMap', resp.data)
+        self.assertNotIn(b'google.maps', resp.data)
+
+        # Verify restaurant listing and search work as expected
+        self.assertIn(b'Pizza Place', resp.data)
+        self.assertIn(b'Burger Joint', resp.data)
+        self.assertIn(b'restaurant-list', resp.data)
+
+        # Verify search filter continues to work
+        resp_search = self.client.get('/customer/restaurants?name=Pizza')
+        self.assertEqual(resp_search.status_code, 200)
+        self.assertIn(b'Pizza Place', resp_search.data)
+        self.assertNotIn(b'Burger Joint', resp_search.data)
+        self.assertNotIn(b'id="map"', resp_search.data)
+
 if __name__ == '__main__':
     unittest.main()

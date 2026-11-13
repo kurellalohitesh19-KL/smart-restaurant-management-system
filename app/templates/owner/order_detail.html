@@ -2,7 +2,12 @@
 {% block title %}Order #{{ order.id }} Details{% endblock %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Order #{{ order.id }} Details</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Order #{{ order.id }} Details</h2>
+        <a href="{{ url_for('owner.view_receipt', order_id=order.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+            <i class="bi bi-receipt me-1"></i>Print Bill / Receipt
+        </a>
+    </div>
     <p><strong>Customer:</strong> {{ order.customer.name }} ({{ order.customer.email }})</p>
     {% if order.table_id %}
         <p><strong>Table:</strong> {{ order.table.table_number }}</p>

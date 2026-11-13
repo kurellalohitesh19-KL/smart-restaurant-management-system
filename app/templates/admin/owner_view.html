@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}View Restaurant Owner: {{ owner.name }} - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-container" style="max-width: 850px; margin: 0 auto;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h2>Owner Details: {{ owner.name }}</h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.edit_owner', owner_id=owner.id) }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-pencil me-1"></i>Edit Profile
+            </a>
+            <a href="{{ url_for('admin.list_owners') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Owners
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes mb-3">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Profile Information Card -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-dark text-warning border-bottom border-warning border-opacity-25 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Profile Information</h5>
+            <span class="badge {{ 'bg-success' if owner.is_active else 'bg-secondary' }}">
+                {{ 'Active' if owner.is_active else 'Inactive' }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Owner ID</span>
+                    <span class="fw-semibold">{{ owner.id }}</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Full Name</span>
+                    <span class="fw-semibold">{{ owner.name }}</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Username</span>
+                    <span class="badge bg-dark text-warning border border-warning border-opacity-25">
+                        @{{ owner.username or owner.display_username }}
+                    </span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Email Address</span>
+                    <span class="fw-semibold">{{ owner.email }}</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Phone Number</span>
+                    <span>{{ owner.phone or 'Not provided' }}</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Role</span>
+                    <span class="badge bg-light text-dark border">Restaurant Owner</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Registered On</span>
+                    <span>{{ owner.created_at.strftime('%Y-%m-%d %H:%M UTC') if owner.created_at else 'N/A' }}</span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block">Last Updated</span>
+                    <span>{{ owner.updated_at.strftime('%Y-%m-%d %H:%M UTC') if owner.updated_at else 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned Restaurants Card -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-dark text-light border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-shop me-2 text-warning"></i>Assigned Restaurants ({{ owner.owned_restaurants|length }})</h5>
+            <a href="{{ url_for('admin.create_restaurant') }}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-plus-circle me-1"></i>Add Restaurant
+            </a>
+        </div>
+        <div class="card-body">
+            {% if owner.owned_restaurants %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Restaurant Name</th>
+                            <th>City, State</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in owner.owned_restaurants %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td class="fw-semibold">
+                                <a href="{{ url_for('admin.view_restaurant', restaurant_id=r.id) }}">{{ r.name }}</a>
+                            </td>
+                            <td>{{ r.city }}, {{ r.state }}</td>
+                            <td>{{ r.phone or '—' }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-success' if r.is_active else 'bg-secondary' }}">
+                                    {{ 'Active' if r.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.view_restaurant', restaurant_id=r.id) }}" class="btn btn-sm btn-outline-info">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-shop display-6 d-block mb-2 text-warning opacity-50"></i>
+                <p class="mb-1">No restaurants are currently assigned to this owner.</p>
+                <small>You can assign a restaurant to this owner when adding a new restaurant or editing an existing one.</small>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin.create_restaurant') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Create Restaurant for this Owner
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Account Controls -->
+    <div class="d-flex align-items-center gap-2">
+        <form action="{{ url_for('admin.toggle_owner', owner_id=owner.id) }}" method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn {{ 'btn-warning' if owner.is_active else 'btn-success' }}">
+                <i class="bi {{ 'bi-slash-circle' if owner.is_active else 'bi-check-circle' }} me-1"></i>
+                {{ 'Deactivate Owner Account' if owner.is_active else 'Activate Owner Account' }}
+            </button>
+        </form>
+        <a href="{{ url_for('admin.edit_owner', owner_id=owner.id) }}" class="btn btn-outline-primary">
+            Edit Information
+        </a>
+        <a href="{{ url_for('admin.list_owners') }}" class="btn btn-outline-secondary">
+            Back to Owners
+        </a>
+    </div>
+</div>
+{% endblock %}

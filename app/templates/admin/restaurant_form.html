@@ -27,7 +27,7 @@
             <select name="owner_id" required {% if view_only %}disabled{% endif %}>
                 <option value="">Select Owner</option>
                 {% for o in owners %}
-                <option value="{{ o.id }}" {% if restaurant and restaurant.owner_id == o.id %}selected{% endif %}>{{ o.name }} ({{ o.email }})</option>
+                <option value="{{ o.id }}" {% if restaurant and restaurant.owner_id == o.id %}selected{% endif %}>{{ o.name }}{% if o.username %} (@{{ o.username }}){% endif %} - {{ o.email }}{% if not o.is_active %} [Inactive]{% endif %}</option>
                 {% endfor %}
             </select>
         </div>

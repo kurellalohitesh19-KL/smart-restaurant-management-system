@@ -38,16 +38,31 @@ The **Smart Restaurant Management and Ordering System** streamlines table bookin
 
 ---
 
-## 👥 User Roles & Permissions
+## 👥 User Roles & Capabilities
 
 The application implements four distinct roles with strict data isolation:
 
 | Role | Blueprint / Route Prefix | Primary Responsibilities | Data Access Scope |
 | :--- | :--- | :--- | :--- |
-| **Customer** (`customer`) | `/customer` | Discover restaurants, book tables, order food, track order status. | Private account, personal reservations, and personal orders only. |
-| **Restaurant Owner** (`restaurant_owner`) | `/owner` | Manage restaurant profile, tables, menu categories, dishes, staff, view orders and reservations. | Assigned restaurant only. Cannot access other restaurants' data. |
-| **Restaurant Staff** (`restaurant_staff`) | `/staff` | Operational tasks: update table status, accept/confirm reservations, update kitchen order progress. | Assigned restaurant operations only. |
-| **Super Admin** (`super_admin`) | `/admin` | Platform governance: manage all restaurants, assign owners, register staff (`/admin/staff/create`), monitor platform-wide reservations and orders. | Platform-wide access. |
+| **Customer** (`customer`) | `/customer` | Discover restaurants, book tables, order food, track order status, review bills. | Private account, personal reservations, and personal orders only. |
+| **Restaurant Owner** (`restaurant_owner`) | `/owner` | Manage restaurant profile, tables, menu categories, dishes, staff, view orders and reservations, export sales reports. | Assigned restaurant only. Cannot access other restaurants' data. |
+| **Restaurant Staff** (`restaurant_staff`) | `/staff` | Operational tasks: update table status, accept/confirm reservations, update kitchen order progress (KDS). | Assigned restaurant operations only. |
+| **Super Admin** (`super_admin`) | `/admin` | Platform governance: manage all restaurants, assign owners, register staff (`/admin/staff/create`), monitor platform-wide reservations, orders, and reports. | Platform-wide access. |
+
+---
+
+## 🔑 Default Accounts & Seed Data (Testing)
+
+For local evaluation, demo seed accounts are available:
+
+| Role | Email | Password | Access Area |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `admin@test.com` | `Admin@123` | `/admin/dashboard` |
+| **Restaurant Owner** | `arun.owner.demo@example.com` | `Password@123` | `/owner/dashboard` |
+| **Restaurant Staff** | `staff@test.com` | `Password@123` | `/staff/dashboard` |
+| **Customer** | `customer@test.com` | `Password@123` | `/customer/dashboard` |
+
+> *Note: For production deployments, all default passwords must be changed immediately, and non-root application database users should be provisioned.*
 
 ---
 
@@ -263,55 +278,116 @@ The application will be accessible at: **`http://127.0.0.1:5000`**
 
 ---
 
+## 📡 API Documentation & Endpoints
+
+The system provides asynchronous JSON API endpoints under `/api`:
+
+### 1. `GET /api/status`
+Health and service discovery endpoint.
+- **Request**: `GET /api/status`
+- **Response**:
+```json
+{
+  "status": "ok",
+  "application": "Smart Restaurant Management System",
+  "version": "1.0.0"
+}
+```
+
+### 2. `GET /api/restaurants/nearby`
+Find restaurants ordered by proximity to coordinates.
+- **Query Parameters**:
+  - `lat` (float, required): Latitude (default Trichy: 10.7905)
+  - `lng` (float, required): Longitude (default Trichy: 78.7047)
+  - `radius` (float, optional): Maximum radius in km (default: 15.0)
+- **Response**:
+```json
+{
+  "success": true,
+  "count": 2,
+  "restaurants": [
+    {
+      "id": 1,
+      "name": "Spice Garden",
+      "cuisine": "South Indian, Chettinad",
+      "distance_km": 1.42,
+      "address": "12 Salai Road, Thillai Nagar, Trichy"
+    }
+  ]
+}
+```
+
+### 3. `GET /api/restaurants/<restaurant_id>/slot-availability`
+Retrieve table availability for a specific date and time slot.
+- **Parameters**: `date` (YYYY-MM-DD), `time` (HH:MM), `guests` (int)
+- **Response**:
+```json
+{
+  "success": true,
+  "available": true,
+  "available_tables_count": 4,
+  "tables": [
+    {"id": 2, "table_number": "T-2", "capacity": 4, "location": "indoor"}
+  ]
+}
+```
+
+### 4. `GET /api/orders/<order_id>/status`
+Real-time order polling endpoint for live customer and kitchen tracking.
+- **Response**:
+```json
+{
+  "success": true,
+  "order_id": 14,
+  "status": "preparing",
+  "status_display": "Preparing in Kitchen",
+  "total_amount": 450.00
+}
+```
+
+---
+
 ## 🧪 Running the Test Suites
 
-All automated tests run against **isolated in-memory or SQLite databases**. The development MySQL database is **never accessed or modified during testing**.
+The test suite contains **249 comprehensive automated tests** across unit, isolation, and live MySQL persistence categories.
 
-### 1. Full Unit Test Suite (165 Tests)
-Runs all unit, regression, RBAC, and boundary tests:
+### 1. Run Complete Test Suite (249 Tests)
 ```bash
-python -m unittest discover -s tests
+python -m unittest discover tests
 ```
-*Expected Result:* `Ran 165 tests ... OK`
+*Expected Result:* `Ran 249 tests ... OK` (0 errors, 0 failures).
 
-### 2. CSRF Security Protection Suite (8 Tests)
-Verifies CSRF enforcement on state-modifying POST routes:
+### 2. Run In-Memory Unit Test Suite (236 Tests)
+Runs all unit, regression, RBAC, cart, and boundary tests using isolated SQLite memory:
 ```bash
-python -m unittest tests/test_csrf.py
+python -m unittest discover -s tests -p "test_*.py"
 ```
-*Expected Result:* `Ran 8 tests ... OK`
 
-### 3. Root URL Redirect Suite (6 Tests)
-Verifies anonymous login redirection and authenticated role routing:
+### 3. Run Live MySQL Database Persistence Suite (13 Tests)
+Verifies physical MySQL database transactions, snapshot integrity, and data persistence against `smart_restaurant_db`:
 ```bash
-python -m unittest tests/test_root_redirect.py
+python -m unittest tests/test_mysql_persistence.py
 ```
-*Expected Result:* `Ran 6 tests ... OK`
+*Expected Result:* `Ran 13 tests ... OK`
 
-### 4. End-to-End Customer Ordering Browser Test (Playwright)
-Executes a complete customer reservation, menu browsing, cart checkout, and kitchen status transition workflow using an isolated SQLite database on an isolated test server port:
+### 4. End-to-End Customer Workflow Test (Playwright)
+Executes a complete customer reservation, menu browsing, cart checkout, and kitchen status transition workflow:
 ```bash
-# Ensure playwright browser binaries are installed
-pip install playwright
-playwright install chromium
-
-# Run the test
 python scratch/e2e_order_test.py
 ```
 *Expected Result:* `10/10 checks PASS` (including historical unit-price lock verification).
 
 ---
 
-## 🔒 Security & Version Control Rules
+## 🔒 Security Features & Implementation
 
-1. **Never Commit Secrets**: The `.env` file containing local credentials, API keys, or secrets is git-ignored. Keep all configuration in `.env` local to your environment.
-2. **Never Commit Backups or Synthetic Databases**: SQL dumps (`*.sql`, `*.bak`, `*.dump`) and local SQLite files (`*.db`, `*.sqlite`, `*.sqlite3`) are ignored in `.gitignore`.
-3. **Dedicated MySQL User**: Always run the application with a dedicated MySQL user (e.g., `smart_restaurant_app`) with permissions scoped exclusively to `smart_restaurant_db`. Never configure `root` with blank or administrator passwords in production.
-4. **CSRF Protection**: All POST/PUT/DELETE forms must include a CSRF token:
-   ```html
-   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-   ```
-5. **Database Isolation in Tests**: Testing configurations strictly enforce `SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'` or dedicated test SQLite files in `scratch/`.
+1. **CSRF Protection**: Flask-WTF CSRFProtect is enabled globally across all POST, PUT, PATCH, and DELETE operations. Forms contain `{{ csrf_token() }}`.
+2. **Cryptographic Password Hashing**: Passwords use Werkzeug's secure hashing (`generate_password_hash` / `check_password_hash`) with `scrypt` or `pbkdf2:sha256`. Zero plaintext passwords exist in the database.
+3. **Session Cookie Security**: Configured with `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, and `SESSION_COOKIE_SECURE = True` in production.
+4. **Role-Based Access Control (RBAC)**: Custom `@role_required` decorators protect customer, owner, staff, and admin routes. Strict privilege escalation defenses ensure 403 Forbidden across all unauthorized cross-role attempts.
+5. **SQL Injection Defense**: 100% of database interactions utilize SQLAlchemy ORM queries or parameterized `text()` bound parameters. Zero string formatting/f-strings in SQL execution.
+6. **CSV Formula Injection Sanitization**: All CSV report export functions sanitize leading formula execution characters (`=`, `+`, `-`, `@`, `\t`, `\r`) with leading single quotes.
+7. **Credentials & Secrets Isolation**: The `.env` file containing local credentials, API keys, and database passwords is git-ignored and never committed.
 
 ---
 
@@ -324,14 +400,13 @@ python scratch/e2e_order_test.py
 ### 2. `OperationalError: (2003, "Can't connect to MySQL server")`
 - **Cause**: MySQL server is stopped or unreachable at `127.0.0.1:3306`.
 - **Solution**:
-  - Check service status:
-    - Windows: `Get-Service MySQL80` (or start via Services MMC / `net start MySQL80`).
-    - Linux: `sudo systemctl status mysql`.
+  - Windows: `Get-Service MySQL80` or `net start MySQL80`.
+  - Linux: `sudo systemctl status mysql`.
   - Verify `DB_HOST`, `DB_PORT`, `DB_USER`, and `DB_PASSWORD` in `.env`.
 
 ### 3. `OperationalError: (1045, "Access denied for user ...")`
 - **Cause**: Incorrect username or password in `.env`, or missing privileges.
-- **Solution**: Check credentials in `.env`. If your password contains special characters (`@`, `#`, etc.), `config.py` automatically encodes it using `urllib.parse.quote_plus`. Ensure the user has been granted privileges on `smart_restaurant_db.*`.
+- **Solution**: Check credentials in `.env`. Special characters in passwords are automatically escaped via `urllib.parse.quote_plus`. Ensure permissions are granted with `GRANT ALL PRIVILEGES ON smart_restaurant_db.* TO 'smart_restaurant_app'@'127.0.0.1'`.
 
 ### 4. `HTTP 400 Bad Request — CSRF validation failed`
 - **Cause**: A form was submitted without a valid CSRF token, or session cookies expired.
@@ -343,4 +418,18 @@ python scratch/e2e_order_test.py
 
 ### 6. `HTTP 404 Not Found` on `/`
 - **Cause**: Root index route missing.
+- **Solution**: Verified and implemented in `app/__init__.py`. Visiting `/` redirects anonymous visitors to `/auth/login` and authenticated users to their corresponding dashboard.
+
+---
+
+## 📄 License & Contributing
+
+- **License**: MIT License. See [LICENSE](LICENSE) for details.
+- **Contributing**:
+  1. Fork the repository.
+  2. Create a feature branch (`git checkout -b feature/AmazingFeature`).
+  3. Ensure all 249 tests pass (`python -m unittest discover tests`).
+  4. Commit your changes (`git commit -m 'Add amazing feature'`).
+  5. Push to the branch (`git push origin feature/AmazingFeature`).
+  6. Open a Pull Request.
 - **Solution**: Verified and implemented in `app/__init__.py`. Visiting `/` redirects anonymous visitors to `/auth/login` and authenticated users to their corresponding dashboard.

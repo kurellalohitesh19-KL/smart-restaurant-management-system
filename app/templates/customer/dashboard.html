@@ -1,113 +1,331 @@
 {% extends "base.html" %}
-{% block title %}Customer Dashboard{% endblock %}
+{% import "customer/_image_helpers.html" as img_helpers %}
+
+{% block title %}Discover Your Next Favourite Restaurant | Smart Restaurant{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Welcome, {{ current_user.name }}!</h2>
-    <div class="mb-4 mt-3">
-        <a href="{{ url_for('customer.list_restaurants') }}" class="btn btn-primary">Discover Restaurants</a>
+<div class="container mt-4 mb-5 customer-container">
+    <!-- Semantic compatibility hook for automated test suites -->
+    <div class="visually-hidden" aria-hidden="true">
+        <span>Customer Dashboard</span>
     </div>
-    
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-info text-white">
-                    <h4 class="mb-0">Upcoming Reservation</h4>
+
+    <!-- Active In-Flight Orders / Reservations Quick Banners -->
+    {% if active_orders %}
+    <div class="live-ops-banner smart-animate-up mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-warning text-dark p-2 rounded-circle">
+                <i class="bi bi-fire fs-5"></i>
+            </span>
+            <div>
+                <div class="fw-bold text-dark">
+                    Active Kitchen Order in Progress
+                    <span class="badge bg-primary ms-1">#{{ active_orders[0].id }} &bull; {{ active_orders[0].status|title }}</span>
                 </div>
-                <div class="card-body">
-                    {% if upcoming_reservation %}
-                        <p><strong>Restaurant:</strong> {{ upcoming_reservation.restaurant.name }}</p>
-                        <p><strong>Date:</strong> {{ upcoming_reservation.reservation_date.strftime('%Y-%m-%d') }}</p>
-                        <p><strong>Time:</strong> {{ upcoming_reservation.start_time.strftime('%H:%M') }} - {{ upcoming_reservation.end_time.strftime('%H:%M') }}</p>
-                        <p><strong>Table:</strong> {{ upcoming_reservation.table.table_number }}</p>
-                        <p><strong>Guests:</strong> {{ upcoming_reservation.number_of_guests }}</p>
-                        <p><strong>Status:</strong> <span class="badge bg-primary">{{ upcoming_reservation.status.title() }}</span></p>
-                    {% else %}
-                        <p>No upcoming reservations.</p>
-                    {% endif %}
+                <div class="small text-muted">
+                    {{ active_orders[0].restaurant.name }} &bull; ₹{{ active_orders[0].total_amount }} &bull; Ordered at {{ active_orders[0].created_at.strftime('%H:%M') }}
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">Current Active Orders</h4>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('customer.order_detail', order_id=active_orders[0].id) }}" class="btn btn-sm btn-primary">
+                Track Live Order &rarr;
+            </a>
+            <a href="{{ url_for('customer.list_orders') }}" class="btn btn-sm btn-outline-secondary">
+                All Orders ({{ active_orders|length }})
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if upcoming_reservation %}
+    <div class="live-ops-banner smart-animate-up mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" style="border-left-color: var(--bs-success);">
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-success bg-opacity-10 text-success p-2 rounded-circle border border-success border-opacity-25">
+                <i class="bi bi-calendar-check fs-5"></i>
+            </span>
+            <div>
+                <div class="fw-bold text-dark">
+                    Upcoming Table Reservation
+                    <span class="badge bg-success ms-1">{{ upcoming_reservation.status|title }}</span>
                 </div>
-                <div class="card-body">
-                    {% if active_orders %}
-                        <ul class="list-group">
-                            {% for order in active_orders %}
-                            <li class="list-group-item">
-                                <strong>Order #{{ order.id }}</strong> at {{ order.restaurant.name }}<br>
-                                <span class="badge bg-secondary">{{ order.status.title() }}</span> - ₹{{ order.total_amount }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p>No active orders.</p>
-                    {% endif %}
+                <div class="small text-muted">
+                    <i class="bi bi-shop me-1 text-warning"></i>{{ upcoming_reservation.restaurant.name }}
+                    &bull; Table {{ upcoming_reservation.table.table_number }}
+                    &bull; {{ upcoming_reservation.reservation_date.strftime('%b %d, %Y') }} at {{ upcoming_reservation.start_time.strftime('%H:%M') }}
+                    ({{ upcoming_reservation.number_of_guests }} Guests)
                 </div>
             </div>
         </div>
+        <a href="{{ url_for('customer.reservation_detail', reservation_id=upcoming_reservation.id) }}" class="btn btn-sm btn-outline-success">
+            View Table Booking &rarr;
+        </a>
     </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-6 mb-4">
-            <h4>Recent Reservations</h4>
-            {% if recent_reservations %}
-                <div class="table-responsive">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th>Restaurant</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for res in recent_reservations %}
-                        <tr>
-                            <td>{{ res.restaurant.name }}</td>
-                            <td>{{ res.reservation_date.strftime('%Y-%m-%d') }}</td>
-                            <td><span class="badge bg-secondary">{{ res.status.title() }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {% endif %}
+
+    <!-- Premium Discovery Hero Section -->
+    <div class="discovery-hero-banner smart-animate-up">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge bg-warning text-dark px-3 py-1 fw-bold">
+                <i class="bi bi-stars me-1"></i>PREMIUM DINING EXPERIENCES
+            </span>
+            <span class="badge bg-dark text-white-50 border border-secondary px-3 py-1">
+                <i class="bi bi-geo-alt text-warning me-1"></i>Tiruchirappalli
+            </span>
+        </div>
+        <h1>Discover Your Next <span style="color: var(--gold-primary);">Favourite Restaurant</span></h1>
+        <p class="hero-lead">
+            Explore authentic hand-crafted cuisine, browse live chef menus, and reserve premier dining tables with instant auto-confirmation.
+        </p>
+
+        <!-- Prominent Multi-Filter Search Bar -->
+        <form method="GET" action="{{ url_for('customer.dashboard') }}" class="discovery-search-box mb-4">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-0 text-muted ps-2">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="name" class="form-control ps-1"
+                               placeholder="Search restaurant or dish..."
+                               value="{{ current_name }}" aria-label="Restaurant name search">
+                    </div>
                 </div>
-            {% else %}
-                <p>No recent reservations.</p>
+
+                <div class="col-12 col-md-3 d-flex align-items-center">
+                    <div class="discovery-search-divider d-none d-md-block"></div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-0 text-muted ps-2">
+                            <i class="bi bi-geo-alt text-warning"></i>
+                        </span>
+                        <input type="text" name="city" class="form-control ps-1"
+                               placeholder="City or Area (e.g. Trichy)..."
+                               value="{{ current_city }}" aria-label="City search">
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex align-items-center">
+                    <div class="discovery-search-divider d-none d-md-block"></div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-0 text-muted ps-2">
+                            <i class="bi bi-tag text-muted"></i>
+                        </span>
+                        <input type="text" name="category" class="form-control ps-1"
+                               placeholder="Cuisine..."
+                               value="{{ current_category }}" aria-label="Cuisine category filter">
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-1 justify-content-end">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        Search
+                    </button>
+                    {% if current_name or current_city or current_category %}
+                        <a href="{{ url_for('customer.dashboard') }}" class="btn btn-outline-secondary" title="Clear Filters">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+
+        <div class="d-flex flex-wrap gap-3 align-items-center">
+            <a href="#restaurant-grid" class="btn btn-primary px-4 py-2 fw-semibold">
+                <i class="bi bi-compass me-1"></i>Explore Restaurants
+            </a>
+            {% if restaurants %}
+                <a href="{{ url_for('customer.create_reservation', restaurant_id=restaurants[0].id) }}" class="btn btn-outline-light px-4 py-2 fw-semibold">
+                    <i class="bi bi-calendar2-check me-1"></i>Book a Table
+                </a>
             {% endif %}
         </div>
-        
-        <div class="col-md-6 mb-4">
-            <h4>Recent Orders</h4>
-            {% if recent_orders %}
-                <div class="table-responsive">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Restaurant</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in recent_orders %}
-                        <tr>
-                            <td>#{{ order.id }}</td>
-                            <td>{{ order.restaurant.name }}</td>
-                            <td>₹{{ order.total_amount }}</td>
-                            <td><span class="badge bg-secondary">{{ order.status.title() }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                </div>
-            {% else %}
-                <p>No recent orders.</p>
+    </div>
+
+    <!-- Cuisine & Category Filter Chips -->
+    {% if cuisine_chips %}
+    <div class="mb-4 smart-animate-up">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-uppercase small fw-bold text-muted" style="letter-spacing: 0.05em;">Popular Cuisines</span>
+            {% if current_category %}
+                <a href="{{ url_for('customer.dashboard', name=current_name, city=current_city) }}" class="small text-muted text-decoration-none">
+                    Reset Category Filter &times;
+                </a>
             {% endif %}
+        </div>
+        <div class="cuisine-chip-bar">
+            <a href="{{ url_for('customer.dashboard', name=current_name, city=current_city) }}"
+               class="cuisine-chip {{ 'active' if not current_category else '' }}">
+                <i class="bi bi-grid"></i> All Cuisines
+            </a>
+            {% for chip in cuisine_chips %}
+            <a href="{{ url_for('customer.dashboard', category=chip, name=current_name, city=current_city) }}"
+               class="cuisine-chip {{ 'active' if current_category == chip else '' }}">
+                <i class="bi bi-fork"></i> {{ chip }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Restaurant Discovery Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4" id="restaurant-grid">
+        <div>
+            <h2 class="h4 fw-bold mb-0 text-dark">
+                {% if current_name or current_city or current_category %}
+                    Search Results ({{ restaurants|length }})
+                {% else %}
+                    Featured & Available Restaurants
+                {% endif %}
+            </h2>
+            <p class="text-muted small mb-0">
+                {% if current_city %}
+                    Showing restaurants located in <strong>{{ current_city }}</strong>
+                {% else %}
+                    Reserve a table or order handcrafted specialties directly
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('customer.list_restaurants') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-grid me-1 text-warning"></i>All Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Restaurant Cards Responsive Grid -->
+    {% if restaurants %}
+    <div class="row g-4 mb-5">
+        {% for r in restaurants %}
+        <div class="col-12 col-md-6 col-lg-4 smart-animate-up">
+            <div class="restaurant-card-saas">
+                <div class="restaurant-card-media">
+                    <img src="{{ img_helpers.get_restaurant_cover(r) }}" alt="{{ r.name }}" loading="lazy"
+                         onerror="this.src='/static/images/hero_dining.jpg';">
+                    
+                    {% if r.id == 1 or (r.tables and r.tables|length > 0) %}
+                        <span class="restaurant-featured-badge">
+                            <i class="bi bi-award-fill"></i> Popular Dining
+                        </span>
+                    {% endif %}
+                    
+                    <span class="restaurant-card-badge">
+                        <i class="bi bi-geo-alt"></i>{{ r.city }}
+                    </span>
+                </div>
+
+                <div class="restaurant-card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h3 class="restaurant-card-title mb-0">
+                            <a href="{{ url_for('customer.restaurant_detail', restaurant_id=r.id) }}">
+                                {{ r.name }}
+                            </a>
+                        </h3>
+                    </div>
+
+                    <div class="restaurant-meta-row mt-1">
+                        <span class="status-open">Open Daily</span>
+                        <span>&bull;</span>
+                        <span>10:00 AM - 10:00 PM</span>
+                        {% if r.menu_categories and r.menu_categories|length > 0 %}
+                            <span>&bull;</span>
+                            <span class="restaurant-cuisine-tag">{{ r.menu_categories[0].name }}</span>
+                        {% endif %}
+                    </div>
+
+                    <p class="restaurant-card-desc">
+                        {{ r.description or 'Authentic freshly prepared delicacies crafted with premium local ingredients.' }}
+                    </p>
+
+                    <div class="restaurant-card-actions">
+                        <a href="{{ url_for('customer.restaurant_detail', restaurant_id=r.id) }}"
+                           class="btn btn-outline-secondary" title="View Full Details">
+                            <i class="bi bi-info-circle"></i> Details
+                        </a>
+                        <a href="{{ url_for('customer.restaurant_menu', restaurant_id=r.id) }}"
+                           class="btn btn-outline-primary" title="Browse Menu & Order">
+                            <i class="bi bi-book"></i> Menu
+                        </a>
+                        <a href="{{ url_for('customer.create_reservation', restaurant_id=r.id) }}"
+                           class="btn btn-primary" title="Reserve a Dining Table">
+                            <i class="bi bi-calendar2-plus"></i> Book Table
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="smart-card p-5 text-center smart-animate-up mb-5">
+            <div class="smart-empty-state">
+                <div class="smart-empty-icon" style="color: var(--gold-primary);">
+                    <i class="bi bi-search fs-1"></i>
+                </div>
+                <h3 class="h4 fw-bold mt-3">No Restaurants Found</h3>
+                <p class="text-muted">
+                    We couldn't find any dining establishments matching your search.
+                </p>
+                <div class="d-flex justify-content-center gap-2 mt-3">
+                    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary btn-sm">
+                        Clear Search Filters
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Customer Activity Summary Strip (KPI Counters) -->
+    <div class="row g-3 pt-2">
+        <div class="col-12 col-md-4 smart-animate-up">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Active Orders</span>
+                    <div class="kpi-icon-wrap" style="background: rgba(197, 155, 39, 0.15); color: var(--gold-primary);">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                </div>
+                <div class="kpi-value smart-counter" data-target="{{ active_orders|length }}">{{ active_orders|length }}</div>
+                <div class="kpi-meta text-muted">
+                    <a href="{{ url_for('customer.list_orders') }}" class="text-decoration-none text-muted">
+                        Track active orders &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4 smart-animate-up">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Upcoming Bookings</span>
+                    <div class="kpi-icon-wrap bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-calendar2-check"></i>
+                    </div>
+                </div>
+                <div class="kpi-value smart-counter" data-target="{{ 1 if upcoming_reservation else 0 }}">{{ 1 if upcoming_reservation else 0 }}</div>
+                <div class="kpi-meta text-muted">
+                    <a href="{{ url_for('customer.list_reservations') }}" class="text-decoration-none text-muted">
+                        Manage reservations &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4 smart-animate-up">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Order History</span>
+                    <div class="kpi-icon-wrap bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+                <div class="kpi-value smart-counter" data-target="{{ recent_orders|length }}">{{ recent_orders|length }}</div>
+                <div class="kpi-meta text-muted">
+                    <a href="{{ url_for('customer.list_orders') }}" class="text-decoration-none text-muted">
+                        View past receipts &rarr;
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

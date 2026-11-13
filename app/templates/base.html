@@ -6,6 +6,8 @@
     <title>{% block title %}Smart Restaurant Management System{% endblock %}</title>
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-icons.min.css') }}">
     <!-- Custom Theme CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
@@ -30,13 +32,19 @@
                             </li>
                         {% elif current_user.role == 'customer' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('customer.dashboard') }}">Dashboard</a>
+                                <a class="nav-link {% if request.endpoint == 'customer.dashboard' %}active{% endif %}" href="{{ url_for('customer.dashboard') }}">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('customer.list_restaurants') }}">Restaurants</a>
+                                <a class="nav-link {% if request.endpoint in ['customer.list_restaurants', 'customer.restaurant_detail', 'customer.restaurant_menu', 'customer.restaurant_tables'] %}active{% endif %}" href="{{ url_for('customer.list_restaurants') }}">Restaurants</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('customer.view_cart') }}">
+                                <a class="nav-link {% if request.endpoint in ['customer.list_orders', 'customer.order_detail'] %}active{% endif %}" href="{{ url_for('customer.list_orders') }}">My Orders</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint in ['customer.list_reservations', 'customer.reservation_detail', 'customer.create_reservation'] %}active{% endif %}" href="{{ url_for('customer.list_reservations') }}">My Reservations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'customer.view_cart' %}active{% endif %}" href="{{ url_for('customer.view_cart') }}">
                                     Cart
                                     {% if session.get('cart') %}
                                         <span class="cart-badge">{{ session.get('cart')|length }}</span>
@@ -44,10 +52,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('customer.list_reservations') }}">Reservations</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('customer.list_orders') }}">Orders</a>
+                                <a class="nav-link {% if request.endpoint == 'customer.profile' %}active{% endif %}" href="{{ url_for('customer.profile') }}">Profile</a>
                             </li>
                         {% elif current_user.role == 'restaurant_owner' %}
                             <li class="nav-item">
@@ -71,6 +76,12 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('owner.list_orders') }}">Orders</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.kitchen_display') }}">Kitchen</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('owner.reports') }}">Reports</a>
+                            </li>
                         {% elif current_user.role == 'restaurant_staff' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('staff.dashboard') }}">Dashboard</a>
@@ -87,12 +98,18 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('staff.list_orders') }}">Orders</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('staff.kitchen_display') }}">Kitchen</a>
+                            </li>
                         {% elif current_user.role == 'super_admin' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.list_restaurants') }}">Restaurants</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.list_owners') }}">Owners</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.list_staff') }}">Staff</a>
@@ -111,6 +128,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.list_orders') }}">Orders</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.reports') }}">Reports</a>
                             </li>
                         {% endif %}
                     </ul>
@@ -153,6 +173,39 @@
         {% endblock %}
     </main>
 
+    {% if current_user.is_authenticated and current_user.role == 'customer' %}
+    <!-- Mobile Bottom Navigation Bar (Swiggy / Zomato UX Pattern) -->
+    <nav class="customer-bottom-bar d-lg-none" aria-label="Customer Mobile Navigation">
+        <a href="{{ url_for('customer.dashboard') }}" class="customer-bottom-item {% if request.endpoint == 'customer.dashboard' %}active{% endif %}">
+            <i class="bi bi-house-door"></i>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('customer.list_restaurants') }}" class="customer-bottom-item {% if request.endpoint in ['customer.list_restaurants', 'customer.restaurant_detail', 'customer.restaurant_menu', 'customer.restaurant_tables'] %}active{% endif %}">
+            <i class="bi bi-compass"></i>
+            <span>Discover</span>
+        </a>
+        <a href="{{ url_for('customer.list_orders') }}" class="customer-bottom-item {% if request.endpoint in ['customer.list_orders', 'customer.order_detail'] %}active{% endif %}">
+            <i class="bi bi-receipt"></i>
+            <span>Orders</span>
+        </a>
+        <a href="{{ url_for('customer.list_reservations') }}" class="customer-bottom-item {% if request.endpoint in ['customer.list_reservations', 'customer.reservation_detail', 'customer.create_reservation'] %}active{% endif %}">
+            <i class="bi bi-calendar-check"></i>
+            <span>Bookings</span>
+        </a>
+        <a href="{{ url_for('customer.view_cart') }}" class="customer-bottom-item {% if request.endpoint == 'customer.view_cart' %}active{% endif %}">
+            <i class="bi bi-bag"></i>
+            <span>Cart</span>
+            {% if session.get('cart') %}
+                <span class="customer-bottom-badge">{{ session.get('cart')|length }}</span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('customer.profile') }}" class="customer-bottom-item {% if request.endpoint == 'customer.profile' %}active{% endif %}">
+            <i class="bi bi-person"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    {% endif %}
+
     <!-- Footer -->
     <footer class="smart-footer">
         <div class="container">
@@ -162,5 +215,10 @@
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <!-- Chart.js 4.4.2 -->
+    <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+    <!-- SaaS Dashboard Engine -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

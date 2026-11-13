@@ -1,63 +1,141 @@
 {% extends "base.html" %}
-
-{% block title %}My Reservations{% endblock %}
+{% block title %}My Table Bookings | Smart Restaurant{% endblock %}
 
 {% block content %}
-<div class="customer-container">
-    <h2>My Reservations</h2>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-        {% for cat, message in messages %}
-          <li class="{{ cat }}">{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+<div class="container mt-4 mb-5" style="max-width: 1080px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('customer.dashboard') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">My Reservations</li>
+        </ol>
+    </nav>
 
-    <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle mt-3">
-        <thead>
-            <tr>
-                <th>Restaurant</th>
-                <th>Table</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Guests</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in reservations %}
-            <tr>
-                <td>{{ r.restaurant.name }}</td>
-                <td>{{ r.table.table_number }}</td>
-                <td>{{ r.reservation_date }}</td>
-                <td>{{ r.start_time.strftime('%H:%M') }} - {{ r.end_time.strftime('%H:%M') }}</td>
-                <td>{{ r.number_of_guests }}</td>
-                <td><span class="badge {{ 'bg-success' if r.status == 'confirmed' else ('bg-danger' if r.status == 'cancelled' else 'bg-warning text-dark') }}">{{ r.status|capitalize }}</span></td>
-                <td>
-                    <a href="{{ url_for('customer.reservation_detail', reservation_id=r.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                    {% if r.status in ['pending', 'confirmed'] %}
-                    <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this reservation?');">Cancel</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" class="text-center text-muted">You have no reservations.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Header Banner -->
+    <div class="discovery-hero smart-animate-up mb-4 py-4 px-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <span class="badge bg-warning text-dark border border-warning mb-2">
+                    <i class="bi bi-calendar2-check me-1"></i>TABLE RESERVATIONS
+                </span>
+                <h1 class="h2 text-white fw-bold mb-1">Your Dining Reservations</h1>
+                <div class="text-white-50 small">Skip waiting in line. Manage your booked tables at top restaurants.</div>
+            </div>
+            <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-calendar-plus me-1"></i>Book a New Table
+            </a>
+        </div>
     </div>
-    
-    <br>
-    <a href="{{ url_for('customer.dashboard') }}">Back to Dashboard</a>
+
+    {% if reservations %}
+    <div class="smart-card smart-animate-up">
+        <div class="smart-card-header header-dark d-flex justify-content-between align-items-center">
+            <h3 class="smart-card-title text-white mb-0">
+                <i class="bi bi-calendar3 text-warning me-2"></i>All Reservations ({{ reservations|length }})
+            </h3>
+        </div>
+
+        <div class="smart-card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Restaurant</th>
+                            <th>Table</th>
+                            <th>Reservation Date</th>
+                            <th>Time Window</th>
+                            <th>Guests</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservations %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ r.restaurant.name }}</div>
+                                <div class="small text-muted"><i class="bi bi-geo-alt me-1 text-warning"></i>{{ r.restaurant.city }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-dark text-warning border border-secondary px-2 py-1">
+                                    Table {{ r.table.table_number }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ r.reservation_date.strftime('%b %d, %Y') if r.reservation_date.strftime is defined else r.reservation_date }}</div>
+                            </td>
+                            <td>
+                                <span class="small text-muted">
+                                    {{ r.start_time.strftime('%H:%M') }} - {{ r.end_time.strftime('%H:%M') }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    <i class="bi bi-people me-1"></i>{{ r.number_of_guests }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if r.status == 'confirmed' %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2">
+                                        <i class="bi bi-check-circle me-1"></i>Confirmed
+                                    </span>
+                                {% elif r.status == 'pending' %}
+                                    <span class="badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 py-1 px-2">
+                                        <i class="bi bi-hourglass-split me-1"></i>Pending
+                                    </span>
+                                {% elif r.status == 'completed' %}
+                                    <span class="badge bg-secondary py-1 px-2">
+                                        <i class="bi bi-check-all me-1"></i>Completed
+                                    </span>
+                                {% elif r.status == 'cancelled' %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2">
+                                        <i class="bi bi-x-circle me-1"></i>Cancelled
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary py-1 px-2">{{ r.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="{{ url_for('customer.reservation_detail', reservation_id=r.id) }}"
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        Details
+                                    </a>
+                                    {% if r.status in ['pending', 'confirmed'] %}
+                                    <form method="POST" action="{{ url_for('customer.cancel_reservation', reservation_id=r.id) }}"
+                                          onsubmit="return confirm('Are you sure you want to cancel this table reservation?');" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Reservation">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="smart-card p-5 text-center smart-animate-up">
+        <div class="smart-empty-state">
+            <div class="smart-empty-icon" style="color: var(--gold-primary);">
+                <i class="bi bi-calendar2-x"></i>
+            </div>
+            <h4 class="smart-empty-title">No Reservations Yet</h4>
+            <p class="smart-empty-desc">
+                You don't have any table reservations booked. Discover top restaurants and reserve a table to skip dining queues!
+            </p>
+            <div class="mt-3">
+                <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary px-4">
+                    <i class="bi bi-compass me-1"></i>Explore Restaurants
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

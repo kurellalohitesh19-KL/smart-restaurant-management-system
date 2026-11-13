@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Kitchen Display System | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-3 px-md-4">
+    <!-- KDS Header Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 bg-dark text-white p-3 rounded shadow-sm">
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2 fw-bold">
+                <i class="bi bi-fire me-1"></i>KDS LIVE
+            </span>
+            <div>
+                <h1 class="h4 fw-bold mb-0 text-white">{{ restaurant.name }} &bull; Kitchen Operations</h1>
+                <div class="text-white-50 small">
+                    Active Kitchen Orders: <strong>{{ placed_orders|length + confirmed_orders|length + preparing_orders|length + ready_orders|length }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="form-check form-switch text-white-50 small mb-0">
+                <input class="form-check-input" type="checkbox" id="auto-refresh-switch" checked onchange="toggleAutoRefresh(this.checked)">
+                <label class="form-check-label text-white" for="auto-refresh-switch">Auto-Refresh (30s)</label>
+            </div>
+            <a href="{{ url_for('staff.kitchen_display') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh Now
+            </a>
+            <a href="{{ url_for('staff.list_orders') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-list-check me-1"></i>All Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KDS Operational Columns -->
+    <div class="row g-3">
+        <!-- 1. PLACED / NEW -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc;">
+                <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-bell-fill me-1"></i>1. Placed ({{ placed_orders|length }})</span>
+                    <span class="badge bg-light text-primary small">New</span>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-2" style="min-height: 480px; max-height: 80vh; overflow-y: auto;">
+                    {% for order in placed_orders %}
+                        {% include "staff/_kds_order_card.html" %}
+                    {% else %}
+                        <div class="text-center text-muted py-5 small">No new incoming orders</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. CONFIRMED / QUEUED -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc;">
+                <div class="card-header bg-info text-white py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-check-circle-fill me-1"></i>2. Confirmed ({{ confirmed_orders|length }})</span>
+                    <span class="badge bg-light text-info small">In Queue</span>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-2" style="min-height: 480px; max-height: 80vh; overflow-y: auto;">
+                    {% for order in confirmed_orders %}
+                        {% include "staff/_kds_order_card.html" %}
+                    {% else %}
+                        <div class="text-center text-muted py-5 small">No orders waiting in queue</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PREPARING / COOKING -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc;">
+                <div class="card-header bg-warning text-dark py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-egg-fried me-1"></i>3. Preparing ({{ preparing_orders|length }})</span>
+                    <span class="badge bg-dark text-warning small">Cooking</span>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-2" style="min-height: 480px; max-height: 80vh; overflow-y: auto;">
+                    {% for order in preparing_orders %}
+                        {% include "staff/_kds_order_card.html" %}
+                    {% else %}
+                        <div class="text-center text-muted py-5 small">No dishes currently cooking</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. READY FOR SERVICE -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: #f8fafc;">
+                <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-bell me-1"></i>4. Ready to Serve ({{ ready_orders|length }})</span>
+                    <span class="badge bg-light text-success small">Plated</span>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-2" style="min-height: 480px; max-height: 80vh; overflow-y: auto;">
+                    {% for order in ready_orders %}
+                        {% include "staff/_kds_order_card.html" %}
+                    {% else %}
+                        <div class="text-center text-muted py-5 small">No orders ready for pickup</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let kdsTimer = null;
+function toggleAutoRefresh(enabled) {
+    if (kdsTimer) clearInterval(kdsTimer);
+    if (enabled) {
+        kdsTimer = setInterval(() => {
+            window.location.reload();
+        }, 30000);
+    }
+}
+toggleAutoRefresh(true);
+</script>
+{% endblock %}
+

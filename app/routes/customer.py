@@ -11,12 +11,40 @@ from app import db
 from datetime import datetime, timezone
 from flask_login import current_user
 from flask import flash, redirect, url_for, session
+from app.services import reservation_service
 
 customer_bp = Blueprint('customer', __name__)
 
 @customer_bp.route('/dashboard')
 @role_required('customer')
 def dashboard():
+    name_filter = request.args.get('name', '').strip()
+    city_filter = request.args.get('city', '').strip()
+    category_filter = (request.args.get('category') or request.args.get('cuisine', '')).strip()
+
+    # Query active restaurants
+    rest_query = Restaurant.query.filter_by(is_active=True)
+    if name_filter:
+        rest_query = rest_query.filter(Restaurant.name.ilike(f'%{name_filter}%'))
+    if city_filter:
+        rest_query = rest_query.filter(Restaurant.city.ilike(f'%{city_filter}%'))
+    if category_filter:
+        rest_query = rest_query.join(MenuCategory).filter(
+            MenuCategory.name.ilike(f'%{category_filter}%'),
+            MenuCategory.is_active == True
+        )
+    restaurants = rest_query.all()
+
+    # Active categories across active restaurants for discovery chips
+    categories = db.session.query(MenuCategory.name).join(
+        Restaurant, MenuCategory.restaurant_id == Restaurant.id
+    ).filter(
+        Restaurant.is_active == True,
+        MenuCategory.is_active == True
+    ).distinct().limit(12).all()
+    cuisine_chips = [c[0] for c in categories]
+
+    # Customer's active operations
     upcoming_reservation = Reservation.query.filter(
         Reservation.customer_id == current_user.id,
         Reservation.status.in_(['pending', 'confirmed']),
@@ -38,10 +66,15 @@ def dashboard():
 
     return render_template(
         'customer/dashboard.html',
+        restaurants=restaurants,
+        cuisine_chips=cuisine_chips,
         upcoming_reservation=upcoming_reservation,
         recent_reservations=recent_reservations,
         recent_orders=recent_orders,
-        active_orders=active_orders
+        active_orders=active_orders,
+        current_name=name_filter,
+        current_city=city_filter,
+        current_category=category_filter
     )
 
 @customer_bp.route('/restaurants')
@@ -49,25 +82,70 @@ def dashboard():
 def list_restaurants():
     query = Restaurant.query.filter_by(is_active=True)
     
-    name_filter = request.args.get('name')
-    city_filter = request.args.get('city')
+    name_filter = request.args.get('name', '').strip()
+    city_filter = request.args.get('city', '').strip()
+    category_filter = (request.args.get('category') or request.args.get('cuisine', '')).strip()
     
     if name_filter:
         query = query.filter(Restaurant.name.ilike(f'%{name_filter}%'))
     if city_filter:
         query = query.filter(Restaurant.city.ilike(f'%{city_filter}%'))
+    if category_filter:
+        query = query.join(MenuCategory).filter(
+            MenuCategory.name.ilike(f'%{category_filter}%'),
+            MenuCategory.is_active == True
+        )
         
     restaurants = query.all()
-    return render_template('customer/restaurants.html', restaurants=restaurants)
+    return render_template(
+        'customer/restaurants.html',
+        restaurants=restaurants,
+        current_name=name_filter,
+        current_city=city_filter,
+        current_category=category_filter
+    )
+
+@customer_bp.route('/profile', methods=['GET', 'POST'])
+@role_required('customer')
+def profile():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        if not name:
+            flash("Name cannot be empty.", "danger")
+        else:
+            current_user.name = name
+            current_user.phone = phone if phone else None
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for('customer.profile'))
+
+    order_count = Order.query.filter_by(customer_id=current_user.id).count()
+    reservation_count = Reservation.query.filter_by(customer_id=current_user.id).count()
+    return render_template(
+        'customer/profile.html',
+        order_count=order_count,
+        reservation_count=reservation_count
+    )
 
 @customer_bp.route('/restaurants/<int:restaurant_id>')
 @role_required('customer')
 def restaurant_detail(restaurant_id):
     restaurant = Restaurant.query.filter_by(id=restaurant_id, is_active=True).first_or_404()
-    # We can fetch available tables and menus directly here, or use separate routes.
-    # The prompt explicitly suggested /customer/restaurants/<restaurant_id>/menu 
-    # and /customer/restaurants/<restaurant_id>/tables, so I'll link to them.
-    return render_template('customer/restaurant_detail.html', restaurant=restaurant)
+    categories = MenuCategory.query.filter_by(restaurant_id=restaurant.id, is_active=True).all()
+    featured_items = MenuItem.query.filter_by(restaurant_id=restaurant.id, is_available=True).limit(6).all()
+    available_tables_count = Table.query.filter(
+        Table.restaurant_id == restaurant.id,
+        Table.status != 'maintenance'
+    ).count()
+    return render_template(
+        'customer/restaurant_detail.html',
+        restaurant=restaurant,
+        categories=categories,
+        featured_items=featured_items,
+        available_tables_count=available_tables_count
+    )
 
 @customer_bp.route('/restaurants/<int:restaurant_id>/menu')
 @role_required('customer')
@@ -79,6 +157,7 @@ def restaurant_menu(restaurant_id):
 @customer_bp.route('/restaurants/<int:restaurant_id>/tables')
 @role_required('customer')
 def restaurant_tables(restaurant_id):
+    """Show tables that are currently available."""
     restaurant = Restaurant.query.filter_by(id=restaurant_id, is_active=True).first_or_404()
     tables = Table.query.filter_by(restaurant_id=restaurant.id, status='available').all()
     return render_template('customer/tables.html', restaurant=restaurant, tables=tables)
@@ -87,7 +166,7 @@ def restaurant_tables(restaurant_id):
 @role_required('customer')
 def create_reservation(restaurant_id):
     restaurant = Restaurant.query.filter_by(id=restaurant_id, is_active=True).first_or_404()
-    
+
     if request.method == 'POST':
         table_id = request.form.get('table_id')
         res_date = request.form.get('reservation_date')
@@ -95,6 +174,7 @@ def create_reservation(restaurant_id):
         end_time_str = request.form.get('end_time')
         guests = request.form.get('number_of_guests', type=int)
 
+        # --- Parse & validate inputs ---
         try:
             res_date_obj = datetime.strptime(res_date, '%Y-%m-%d').date()
             start_time_obj = datetime.strptime(start_time_str, '%H:%M').time()
@@ -128,20 +208,14 @@ def create_reservation(restaurant_id):
             flash(f'Number of guests ({guests}) exceeds table capacity ({table.capacity}).', 'error')
             return redirect(url_for('customer.create_reservation', restaurant_id=restaurant.id))
 
-        # Check for overlapping reservations
-        overlapping = Reservation.query.filter(
-            Reservation.table_id == table.id,
-            Reservation.reservation_date == res_date_obj,
-            Reservation.status.in_(['pending', 'confirmed']),
-            Reservation.start_time < end_time_obj,
-            Reservation.end_time > start_time_obj
-        ).first()
-
-        if overlapping:
+        # --- Concurrency-safe overlap check (server-side) ---
+        if reservation_service.has_overlapping_reservation(
+            table.id, res_date_obj, start_time_obj, end_time_obj
+        ):
             flash('The table is already reserved for the selected time.', 'error')
             return redirect(url_for('customer.create_reservation', restaurant_id=restaurant.id))
 
-        # Create reservation
+        # --- Create and AUTO-CONFIRM the reservation ---
         reservation = Reservation(
             customer_id=current_user.id,
             restaurant_id=restaurant.id,
@@ -150,24 +224,33 @@ def create_reservation(restaurant_id):
             start_time=start_time_obj,
             end_time=end_time_obj,
             number_of_guests=guests,
-            status='pending'
+            status='pending',  # will be overridden below
         )
         db.session.add(reservation)
+        db.session.flush()  # get reservation.id before marking table
 
-        # Update CustomerRestaurant interaction
-        cr = CustomerRestaurant.query.filter_by(customer_id=current_user.id, restaurant_id=restaurant.id).first()
+        # Auto-confirm: no owner approval required
+        reservation_service.auto_confirm_new_reservation(reservation)
+
+        # --- Track customer–restaurant interaction ---
+        cr = CustomerRestaurant.query.filter_by(
+            customer_id=current_user.id, restaurant_id=restaurant.id
+        ).first()
         if not cr:
             cr = CustomerRestaurant(customer_id=current_user.id, restaurant_id=restaurant.id)
             db.session.add(cr)
         else:
             cr.last_interaction = datetime.now(timezone.utc)
-        
-        db.session.commit()
-        
-        flash('Reservation created successfully.', 'success')
-        return redirect(url_for('customer.list_reservations'))
 
-    tables = Table.query.filter(Table.restaurant_id == restaurant.id, Table.status != 'maintenance').all()
+        db.session.commit()
+
+        flash('Reservation created successfully! Your table has been booked successfully!', 'success')
+        return redirect(url_for('customer.reservation_detail', reservation_id=reservation.id))
+
+    tables = Table.query.filter(
+        Table.restaurant_id == restaurant.id,
+        Table.status != 'maintenance'
+    ).all()
     return render_template('customer/reservation_form.html', restaurant=restaurant, tables=tables)
 
 @customer_bp.route('/reservations')
@@ -189,8 +272,8 @@ def cancel_reservation(reservation_id):
     if reservation.status not in ['pending', 'confirmed']:
         flash('Only pending or confirmed reservations can be cancelled.', 'error')
     else:
-        reservation.status = 'cancelled'
-        db.session.commit()
+        # Use service so table.status is released when no other reservation holds it
+        reservation_service.cancel_reservation(reservation)
         flash('Reservation cancelled successfully.', 'success')
     return redirect(url_for('customer.list_reservations'))
 
@@ -500,3 +583,11 @@ def order_confirm_final(order_id):
     
     flash("Final order confirmed. The restaurant will start preparing soon.", "success")
     return redirect(url_for('customer.order_detail', order_id=order.id))
+
+
+@customer_bp.route('/orders/<int:order_id>/receipt')
+@role_required('customer')
+def order_receipt(order_id):
+    order = Order.query.filter_by(id=order_id, customer_id=current_user.id).first_or_404()
+    return render_template('customer/receipt.html', order=order, is_internal=False)
+

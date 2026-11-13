@@ -100,7 +100,12 @@ htmlcov/
 *.log
 
 # =========================
-# Misc
+# Misc & Agent Workspaces
 # =========================
 .mypy_cache/
 .ruff_cache/
+.agent/
+.agents/
+.gemini/
+.gsd/
+report_evidence/

@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
-from flask_login import login_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response
+from flask_login import login_required, current_user
 from app.utils import role_required
 from app import db
 from app.models.restaurant import Restaurant, RestaurantStaff
@@ -8,7 +8,10 @@ from app.models.table import Table
 from app.models.reservation import Reservation
 from app.models.order import Order
 from app.models.menu import MenuCategory, MenuItem
-from datetime import datetime
+from datetime import datetime, timedelta, date
+from sqlalchemy import func
+import csv
+import io
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -59,12 +62,19 @@ def dashboard():
         'cancelled': sum(1 for o in orders if o.status == 'cancelled')
     }
 
+    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(5).all()
+    recent_reservations = Reservation.query.order_by(Reservation.created_at.desc()).limit(5).all()
+    recent_restaurants = Restaurant.query.order_by(Restaurant.created_at.desc()).limit(5).all()
+
     return render_template('admin/dashboard.html',
                            user_stats=user_stats,
                            res_stats=res_stats,
                            table_stats=table_stats,
                            reservation_stats=reservation_stats,
-                           order_stats=order_stats)
+                           order_stats=order_stats,
+                           recent_orders=recent_orders,
+                           recent_reservations=recent_reservations,
+                           recent_restaurants=recent_restaurants)
 
 @admin_bp.route('/restaurants')
 @role_required('super_admin')
@@ -76,7 +86,7 @@ def list_restaurants():
 @role_required('super_admin')
 def create_restaurant():
     if request.method == 'POST':
-        name = request.form.get('name')
+        name = request.form.get('name', '').strip()
         owner_id = request.form.get('owner_id')
         
         if not name or not owner_id:
@@ -84,8 +94,8 @@ def create_restaurant():
             return redirect(url_for('admin.create_restaurant'))
             
         owner = User.query.get(owner_id)
-        if not owner or owner.role != 'restaurant_owner':
-            flash('Invalid owner selected. Owner must have restaurant_owner role.', 'danger')
+        if not owner or owner.role != 'restaurant_owner' or not owner.is_active:
+            flash('Invalid owner selected. Owner must be an active user with the restaurant_owner role.', 'danger')
             return redirect(url_for('admin.create_restaurant'))
             
         restaurant = Restaurant(
@@ -106,7 +116,7 @@ def create_restaurant():
         flash('Restaurant created successfully.', 'success')
         return redirect(url_for('admin.list_restaurants'))
         
-    owners = User.query.filter_by(role='restaurant_owner').all()
+    owners = User.query.filter_by(role='restaurant_owner', is_active=True).order_by(User.name.asc()).all()
     return render_template('admin/restaurant_form.html', owners=owners, restaurant=None)
 
 @admin_bp.route('/restaurants/<int:restaurant_id>')
@@ -121,7 +131,7 @@ def edit_restaurant(restaurant_id):
     restaurant = Restaurant.query.get_or_404(restaurant_id)
     
     if request.method == 'POST':
-        name = request.form.get('name')
+        name = request.form.get('name', '').strip()
         owner_id = request.form.get('owner_id')
         
         if not name or not owner_id:
@@ -129,8 +139,8 @@ def edit_restaurant(restaurant_id):
             return redirect(url_for('admin.edit_restaurant', restaurant_id=restaurant.id))
             
         owner = User.query.get(owner_id)
-        if not owner or owner.role != 'restaurant_owner':
-            flash('Invalid owner selected. Owner must have restaurant_owner role.', 'danger')
+        if not owner or owner.role != 'restaurant_owner' or (not owner.is_active and owner.id != restaurant.owner_id):
+            flash('Invalid owner selected. Owner must be an active user with the restaurant_owner role.', 'danger')
             return redirect(url_for('admin.edit_restaurant', restaurant_id=restaurant.id))
             
         restaurant.name = name
@@ -149,8 +159,195 @@ def edit_restaurant(restaurant_id):
         flash('Restaurant updated successfully.', 'success')
         return redirect(url_for('admin.list_restaurants'))
         
-    owners = User.query.filter_by(role='restaurant_owner').all()
+    active_owners = User.query.filter_by(role='restaurant_owner', is_active=True).all()
+    current_owner = User.query.get(restaurant.owner_id) if restaurant.owner_id else None
+    owners_map = {o.id: o for o in active_owners}
+    if current_owner and current_owner.role == 'restaurant_owner':
+        owners_map[current_owner.id] = current_owner
+    owners = sorted(owners_map.values(), key=lambda o: (o.name or '').lower())
     return render_template('admin/restaurant_form.html', owners=owners, restaurant=restaurant)
+
+# --- Restaurant Owner Management ---
+
+@admin_bp.route('/owners')
+@role_required('super_admin')
+def list_owners():
+    search = request.args.get('search', '').strip()
+    query = User.query.filter_by(role='restaurant_owner')
+    
+    if search:
+        query = query.filter(
+            (User.name.ilike(f'%{search}%')) |
+            (User.username.ilike(f'%{search}%')) |
+            (User.email.ilike(f'%{search}%'))
+        )
+        
+    owners = query.order_by(User.created_at.desc()).all()
+    return render_template('admin/owners.html', owners=owners, search=search)
+
+@admin_bp.route('/owners/create', methods=['GET', 'POST'])
+@role_required('super_admin')
+def create_owner():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        if 'form_submitted' in request.form:
+            is_active = request.form.get('is_active') == 'on'
+        else:
+            is_active = request.form.get('is_active', 'on') in ['on', 'true', '1', True, 1]
+        
+        # Required fields validation
+        if not name or not username or not email or not password:
+            flash("Full name, username, email, and password are required.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if len(username) < 3:
+            flash("Username must be at least 3 characters long.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if User.query.filter(func.lower(User.username) == username.lower()).first():
+            flash("Username is already registered. Please choose another username.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            flash("Please enter a valid email address.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if User.query.filter(func.lower(User.email) == email.lower()).first():
+            flash("Email is already registered. Please use a different email address.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if phone and User.query.filter_by(phone=phone).first():
+            flash("Phone number is already registered.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+            
+        try:
+            new_owner = User(
+                name=name,
+                username=username,
+                email=email,
+                phone=phone if phone else None,
+                role='restaurant_owner',
+                is_active=is_active
+            )
+            new_owner.set_password(password)
+            db.session.add(new_owner)
+            db.session.commit()
+            
+            flash(f"Restaurant Owner '{name}' created successfully.", "success")
+            return redirect(url_for('admin.list_owners'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Failed to create owner account: {str(e)}", "danger")
+            return render_template('admin/owner_form.html', owner=None, view_only=False)
+
+    return render_template('admin/owner_form.html', owner=None, view_only=False)
+
+@admin_bp.route('/owners/<int:owner_id>')
+@role_required('super_admin')
+def view_owner(owner_id):
+    owner = User.query.filter_by(id=owner_id, role='restaurant_owner').first_or_404()
+    return render_template('admin/owner_view.html', owner=owner)
+
+@admin_bp.route('/owners/<int:owner_id>/edit', methods=['GET', 'POST'])
+@role_required('super_admin')
+def edit_owner(owner_id):
+    owner = User.query.filter_by(id=owner_id, role='restaurant_owner').first_or_404()
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        if 'form_submitted' in request.form:
+            is_active = request.form.get('is_active') == 'on'
+        else:
+            is_active = request.form.get('is_active', 'on') in ['on', 'true', '1', True, 1]
+        
+        if not name or not username or not email:
+            flash("Full name, username, and email are required.", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            
+        if len(username) < 3:
+            flash("Username must be at least 3 characters long.", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            
+        existing_u = User.query.filter(func.lower(User.username) == username.lower(), User.id != owner.id).first()
+        if existing_u:
+            flash("Username is already registered by another user.", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            flash("Please enter a valid email address.", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            
+        existing_e = User.query.filter(func.lower(User.email) == email.lower(), User.id != owner.id).first()
+        if existing_e:
+            flash("Email is already registered by another user.", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            
+        if phone:
+            existing_p = User.query.filter(User.phone == phone, User.id != owner.id).first()
+            if existing_p:
+                flash("Phone number is already registered by another user.", "danger")
+                return render_template('admin/owner_form.html', owner=owner, view_only=False)
+                
+        if password:
+            if len(password) < 8:
+                flash("New password must be at least 8 characters long.", "danger")
+                return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            if password != confirm_password:
+                flash("Passwords do not match.", "danger")
+                return render_template('admin/owner_form.html', owner=owner, view_only=False)
+            owner.set_password(password)
+            
+        try:
+            owner.name = name
+            owner.username = username
+            owner.email = email
+            owner.phone = phone if phone else None
+            owner.is_active = is_active
+            db.session.commit()
+            
+            flash(f"Restaurant Owner '{name}' updated successfully.", "success")
+            return redirect(url_for('admin.list_owners'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Failed to update owner account: {str(e)}", "danger")
+            return render_template('admin/owner_form.html', owner=owner, view_only=False)
+
+    return render_template('admin/owner_form.html', owner=owner, view_only=False)
+
+@admin_bp.route('/owners/<int:owner_id>/toggle', methods=['POST'])
+@role_required('super_admin')
+def toggle_owner(owner_id):
+    owner = User.query.filter_by(id=owner_id, role='restaurant_owner').first_or_404()
+    
+    if owner.id == current_user.id:
+        flash("You cannot deactivate your own administrative account.", "danger")
+        return redirect(url_for('admin.list_owners'))
+        
+    owner.is_active = not owner.is_active
+    db.session.commit()
+    
+    status = "activated" if owner.is_active else "deactivated"
+    flash(f"Owner account '{owner.name}' {status} successfully.", "success")
+    return redirect(url_for('admin.list_owners'))
+
 
 # --- Staff Management ---
 
@@ -656,3 +853,178 @@ def update_order_status(order_id):
         flash(f"Invalid status transition from {order.status} to {new_status}.", "danger")
         
     return redirect(url_for('admin.view_order', order_id=order.id))
+
+
+@admin_bp.route('/orders/<int:order_id>/receipt')
+@role_required('super_admin')
+def view_receipt(order_id):
+    order = Order.query.get_or_404(order_id)
+    return render_template('customer/receipt.html', order=order, is_internal=True)
+
+
+# --- Platform Reports & CSV Export ---
+
+def _parse_admin_date_range(req):
+    start_str = req.args.get('start_date')
+    end_str = req.args.get('end_date')
+    today = date.today()
+    default_start = today - timedelta(days=30)
+    
+    try:
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else default_start
+    except (ValueError, TypeError):
+        start_date = default_start
+        
+    try:
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else today
+    except (ValueError, TypeError):
+        end_date = today
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    return start_date, end_date
+
+def _safe_csv_val(val):
+    if val is None:
+        return ""
+    s = str(val)
+    if s and s[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
+
+@admin_bp.route('/reports')
+@role_required('super_admin')
+def reports():
+    restaurant_id = request.args.get('restaurant_id', type=int)
+    start_date, end_date = _parse_admin_date_range(request)
+    next_day = end_date + timedelta(days=1)
+
+    order_query = Order.query.filter(
+        Order.created_at >= start_date,
+        Order.created_at < next_day
+    )
+    res_query = Reservation.query.filter(
+        Reservation.reservation_date >= start_date,
+        Reservation.reservation_date <= end_date
+    )
+
+    if restaurant_id:
+        order_query = order_query.filter(Order.restaurant_id == restaurant_id)
+        res_query = res_query.filter(Reservation.restaurant_id == restaurant_id)
+
+    orders = order_query.order_by(Order.created_at.desc()).all()
+    reservations = res_query.order_by(Reservation.reservation_date.desc()).all()
+
+    total_sales = sum(o.total_amount for o in orders if o.status != 'cancelled')
+    orders_count = len(orders)
+    served_orders_count = sum(1 for o in orders if o.status == 'served')
+    cancelled_orders_count = sum(1 for o in orders if o.status == 'cancelled')
+    avg_order_value = (float(total_sales) / orders_count) if orders_count > 0 else 0.0
+
+    res_count = len(reservations)
+    confirmed_res_count = sum(1 for r in reservations if r.status == 'confirmed')
+    completed_res_count = sum(1 for r in reservations if r.status == 'completed')
+    cancelled_res_count = sum(1 for r in reservations if r.status == 'cancelled')
+
+    restaurants = Restaurant.query.all()
+
+    return render_template('admin/reports.html',
+                           restaurants=restaurants,
+                           current_restaurant=restaurant_id,
+                           start_date=start_date.strftime('%Y-%m-%d'),
+                           end_date=end_date.strftime('%Y-%m-%d'),
+                           total_sales=total_sales,
+                           orders_count=orders_count,
+                           served_orders_count=served_orders_count,
+                           cancelled_orders_count=cancelled_orders_count,
+                           avg_order_value=avg_order_value,
+                           res_count=res_count,
+                           confirmed_res_count=confirmed_res_count,
+                           completed_res_count=completed_res_count,
+                           cancelled_res_count=cancelled_res_count,
+                           orders=orders[:25])
+
+@admin_bp.route('/reports/export/orders')
+@role_required('super_admin')
+def export_orders_csv():
+    restaurant_id = request.args.get('restaurant_id', type=int)
+    start_date, end_date = _parse_admin_date_range(request)
+    next_day = end_date + timedelta(days=1)
+
+    query = Order.query.filter(
+        Order.created_at >= start_date,
+        Order.created_at < next_day
+    )
+    if restaurant_id:
+        query = query.filter(Order.restaurant_id == restaurant_id)
+
+    orders = query.order_by(Order.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Order ID', 'Restaurant', 'Date & Time', 'Customer Name', 'Customer Email', 'Table Number', 'Status', 'Items Count', 'Total Amount (INR)'])
+
+    for o in orders:
+        writer.writerow([
+            _safe_csv_val(o.id),
+            _safe_csv_val(o.restaurant.name if o.restaurant else 'N/A'),
+            _safe_csv_val(o.created_at.strftime('%Y-%m-%d %H:%M:%S') if o.created_at else ''),
+            _safe_csv_val(o.customer.name if o.customer else ''),
+            _safe_csv_val(o.customer.email if o.customer else ''),
+            _safe_csv_val(o.table.table_number if o.table else 'N/A'),
+            _safe_csv_val(o.status.title()),
+            _safe_csv_val(len(o.items)),
+            _safe_csv_val(f"{float(o.total_amount):.2f}")
+        ])
+
+    prefix = f"platform_orders_{restaurant_id or 'all'}"
+    filename = f"{prefix}_{start_date}_{end_date}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+@admin_bp.route('/reports/export/reservations')
+@role_required('super_admin')
+def export_reservations_csv():
+    restaurant_id = request.args.get('restaurant_id', type=int)
+    start_date, end_date = _parse_admin_date_range(request)
+
+    query = Reservation.query.filter(
+        Reservation.reservation_date >= start_date,
+        Reservation.reservation_date <= end_date
+    )
+    if restaurant_id:
+        query = query.filter(Reservation.restaurant_id == restaurant_id)
+
+    reservations = query.order_by(Reservation.reservation_date.desc(), Reservation.start_time.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Reservation ID', 'Restaurant', 'Date', 'Start Time', 'End Time', 'Customer Name', 'Customer Email', 'Customer Phone', 'Table Number', 'Guests', 'Status'])
+
+    for r in reservations:
+        writer.writerow([
+            _safe_csv_val(r.id),
+            _safe_csv_val(r.restaurant.name if r.restaurant else 'N/A'),
+            _safe_csv_val(r.reservation_date.strftime('%Y-%m-%d')),
+            _safe_csv_val(r.start_time.strftime('%H:%M')),
+            _safe_csv_val(r.end_time.strftime('%H:%M')),
+            _safe_csv_val(r.customer.name if r.customer else ''),
+            _safe_csv_val(r.customer.email if r.customer else ''),
+            _safe_csv_val(r.customer.phone if r.customer else ''),
+            _safe_csv_val(r.table.table_number if r.table else 'N/A'),
+            _safe_csv_val(r.number_of_guests),
+            _safe_csv_val(r.status.title())
+        ])
+
+    prefix = f"platform_reservations_{restaurant_id or 'all'}"
+    filename = f"{prefix}_{start_date}_{end_date}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+

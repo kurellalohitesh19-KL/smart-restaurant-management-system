@@ -47,15 +47,21 @@ class Config:
     # CSRF Protection
     WTF_CSRF_ENABLED = True
 
+    # Session Cookie Security
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
+    SESSION_COOKIE_SECURE = False
 
 
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'true').lower() in ('true', '1')
 
 
 class TestingConfig(Config):

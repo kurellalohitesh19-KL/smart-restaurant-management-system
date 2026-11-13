@@ -5,7 +5,7 @@
 {% block content %}
 <div class="owner-container">
     <h2>Reservations for {{ restaurant.name }}</h2>
-    
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flashes">
@@ -22,7 +22,7 @@
             <tr>
                 <th>Customer</th>
                 <th>Table</th>
-                <th>Date & Time</th>
+                <th>Date &amp; Time</th>
                 <th>Guests</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -35,26 +35,60 @@
                 <td>{{ r.table.table_number }}</td>
                 <td>{{ r.reservation_date }}<br><small class="text-muted">{{ r.start_time.strftime('%H:%M') }} - {{ r.end_time.strftime('%H:%M') }}</small></td>
                 <td>{{ r.number_of_guests }}</td>
-                <td><span class="badge {{ 'bg-success' if r.status in ['confirmed', 'completed'] else ('bg-danger' if r.status == 'cancelled' else 'bg-warning text-dark') }}">{{ r.status|capitalize }}</span></td>
+                <td>
+                    <span class="badge {{ 'bg-success' if r.status in ['confirmed', 'completed'] else ('bg-danger' if r.status == 'cancelled' else 'bg-warning text-dark') }}">
+                        {{ r.status|capitalize }}
+                    </span>
+                </td>
                 <td>
                     {% if r.status == 'pending' %}
+                    {# Reservations created by customers are auto-confirmed, but allow manual confirm for edge cases #}
                     <form method="POST" action="{{ url_for('owner.confirm_reservation', reservation_id=r.id) }}" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm btn-success">Confirm</button>
                     </form>
                     <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this reservation?');">Cancel</button>
                     </form>
-                    {% elif r.status == 'confirmed' %}
+
+                    {% elif r.status == 'confirmed' and r.table.status == 'reserved' %}
+                    {# Customer has a booking — allow check-in (seat the customer) #}
+                    <form method="POST" action="{{ url_for('owner.checkin_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-primary">Check In</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this reservation?');">Cancel</button>
+                    </form>
+
+                    {% elif r.status == 'confirmed' and r.table.status == 'occupied' %}
+                    {# Customer is dining — allow checkout (complete + release table) #}
                     <form method="POST" action="{{ url_for('owner.complete_reservation', reservation_id=r.id) }}" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-warning text-dark" onclick="return confirm('Mark customer as left and release table?');">
+                            ✓ Customer Left — Release Table
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this reservation?');">Cancel</button>
+                    </form>
+
+                    {% elif r.status == 'confirmed' %}
+                    {# Fallback for any other confirmed state #}
+                    <form method="POST" action="{{ url_for('owner.complete_reservation', reservation_id=r.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm btn-primary">Mark Completed</button>
                     </form>
                     <form method="POST" action="{{ url_for('owner.cancel_reservation', reservation_id=r.id) }}" style="display:inline;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this reservation?');">Cancel</button>
                     </form>
+
+                    {% else %}
+                    <span class="text-muted small">—</span>
                     {% endif %}
                 </td>
             </tr>
@@ -66,7 +100,7 @@
         </tbody>
     </table>
     </div>
-    
+
     <br>
     <a href="{{ url_for('owner.dashboard') }}">Back to Dashboard</a>
 </div>

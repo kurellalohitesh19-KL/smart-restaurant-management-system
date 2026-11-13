@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Receipt - Order #{{ order.id }} | {{ order.restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5" style="max-width: 680px;">
+    <!-- Non-printing toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        {% if is_internal %}
+            {% if current_user.role == 'super_admin' %}
+                <a href="{{ url_for('admin.view_order', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                    &larr; Back to Order Details
+                </a>
+            {% elif current_user.role == 'restaurant_staff' %}
+                <a href="{{ url_for('staff.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                    &larr; Back to Staff Order
+                </a>
+            {% elif current_user.role == 'restaurant_owner' %}
+                <a href="{{ url_for('owner.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                    &larr; Back to Owner Order
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('customer.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                &larr; Back to Order Tracking
+            </a>
+        {% endif %}
+
+        <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print Official Receipt
+        </button>
+    </div>
+
+    <!-- Official Printable Bill Slip -->
+    <div class="card shadow-sm border receipt-card p-4 p-md-5 bg-white text-dark">
+        <!-- Receipt Header -->
+        <div class="text-center pb-3 border-bottom mb-4">
+            <div class="badge bg-dark text-warning px-3 py-1 mb-2 text-uppercase letter-spacing-1">
+                Tax Invoice & Dining Receipt
+            </div>
+            <h2 class="h3 fw-bold mb-1 text-dark">{{ order.restaurant.name }}</h2>
+            <div class="text-muted small">
+                {{ order.restaurant.address or order.restaurant.city }}<br>
+                {% if order.restaurant.phone %}Phone: {{ order.restaurant.phone }} &bull; {% endif %}
+                GSTIN: 27AABCU9603R1ZM (Sample Registered)
+            </div>
+        </div>
+
+        <!-- Order & Customer Meta Grid -->
+        <div class="row g-2 small mb-4">
+            <div class="col-6">
+                <div><strong class="text-muted">Order ID:</strong> #{{ order.id }}</div>
+                <div><strong class="text-muted">Billed To:</strong> {{ order.customer.name }}</div>
+                <div><strong class="text-muted">Contact:</strong> {{ order.customer.email }}</div>
+            </div>
+            <div class="col-6 text-end">
+                <div><strong class="text-muted">Date:</strong> {{ order.created_at.strftime('%d-%b-%Y') if order.created_at else '' }}</div>
+                <div><strong class="text-muted">Time:</strong> {{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</div>
+                <div>
+                    <strong class="text-muted">Table / Type:</strong> 
+                    <span class="badge bg-light text-dark border">
+                        {% if order.table %}Table {{ order.table.table_number }}{% else %}Dine-in / Direct{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itemized Line Items -->
+        <div class="table-responsive mb-4">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="border-top border-bottom table-light">
+                    <tr>
+                        <th class="py-2">Item Description</th>
+                        <th class="text-center py-2">Qty</th>
+                        <th class="text-end py-2">Rate (₹)</th>
+                        <th class="text-end py-2">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items %}
+                    <tr>
+                        <td class="py-2">
+                            <span class="fw-semibold">{{ item.menu_item.name if item.menu_item else 'Menu Item' }}</span>
+                        </td>
+                        <td class="text-center py-2">{{ item.quantity }}</td>
+                        <td class="text-end py-2">{{ "%.2f"|format(item.unit_price) }}</td>
+                        <td class="text-end py-2 fw-semibold">{{ "%.2f"|format(item.subtotal) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Financial Totals -->
+        <div class="row justify-content-end mb-4">
+            <div class="col-12 col-md-7">
+                <div class="border-top pt-2">
+                    <div class="d-flex justify-content-between py-1 small">
+                        <span class="text-muted">Subtotal:</span>
+                        <span>₹{{ "%.2f"|format(order.total_amount|float) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 small">
+                        <span class="text-muted">CGST (2.5% included):</span>
+                        <span>₹{{ "%.2f"|format((order.total_amount|float) * 0.025 / 1.05) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 small">
+                        <span class="text-muted">SGST (2.5% included):</span>
+                        <span>₹{{ "%.2f"|format((order.total_amount|float) * 0.025 / 1.05) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-top border-bottom mt-1">
+                        <strong class="fs-6">Grand Total:</strong>
+                        <strong class="fs-5 text-dark" style="color: var(--gold-dark) !important;">
+                            ₹{{ "%.2f"|format(order.total_amount|float) }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment & Status Bar -->
+        <div class="p-3 bg-light rounded border text-center small mb-4">
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="text-muted">Order Status</div>
+                    <span class="badge bg-success text-uppercase">{{ order.status }}</span>
+                </div>
+                <div class="col-4 border-start border-end">
+                    <div class="text-muted">Payment Mode</div>
+                    <strong>Counter / Digital Direct</strong>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted">Payment Status</div>
+                    <span class="badge bg-primary text-uppercase">Billed / Settled</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipt Footer & Barcode Aesthetic -->
+        <div class="text-center pt-2 text-muted small border-top">
+            <p class="mb-1 fw-semibold text-dark">Thank you for dining with {{ order.restaurant.name }}!</p>
+            <p class="mb-2" style="font-size: 0.75rem;">This is a computer-generated tax invoice issued via Smart Restaurant Management System.</p>
+            <div class="font-monospace text-secondary" style="letter-spacing: 4px; font-size: 0.8rem;">
+                *SRM-{{ order.restaurant_id }}-{{ order.id }}-{{ order.created_at.strftime('%Y%m%d') if order.created_at else '00' }}*
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+    nav, .navbar, footer, .no-print, .btn, .breadcrumb {
+        display: none !important;
+    }
+    .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .receipt-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+    }
+}
+</style>
+{% endblock %}

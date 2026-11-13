@@ -154,5 +154,90 @@ class LocationTestCase(unittest.TestCase):
         self.assertIn(b'R3', resp.data)
         self.assertNotIn(b'R1', resp.data)
 
+    def test_nearby_search_includes_coordinates_and_metadata(self):
+        resp = self.client.get('/api/restaurants/nearby?latitude=40.7128&longitude=-74.0060&radius=10')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['total_active'], 3)
+        self.assertEqual(data['total_with_coords'], 3)
+        self.assertIn('Found 2 nearby restaurant(s)', data['message'])
+        first = data['restaurants'][0]
+        self.assertEqual(first['latitude'], 40.7128)
+        self.assertEqual(first['longitude'], -74.0060)
+        self.assertIn('description', first)
+
+    def test_nearby_search_missing_coordinates(self):
+        r_nocoords = Restaurant(name='R_NoCoords', email='rn@test.com', owner_id=self.owner1.id,
+                                city='NYC', state='NY', latitude=None, longitude=None, is_active=True)
+        db.session.add(r_nocoords)
+        db.session.commit()
+
+        resp = self.client.get('/api/restaurants/nearby?latitude=40.7128&longitude=-74.0060&radius=10')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['total_active'], 4)
+        self.assertEqual(data['total_with_coords'], 3)
+        names = [r['name'] for r in data['restaurants']]
+        self.assertNotIn('R_NoCoords', names)
+
+    def test_nearby_search_all_missing_coordinates(self):
+        for r in [self.r1, self.r2, self.r3]:
+            r.latitude = None
+            r.longitude = None
+        db.session.commit()
+
+        resp = self.client.get('/api/restaurants/nearby?latitude=40.7128&longitude=-74.0060&radius=10')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(len(data['restaurants']), 0)
+        self.assertEqual(data['total_with_coords'], 0)
+        self.assertIn('none currently have location coordinates configured', data['message'])
+
+    def test_nearby_search_out_of_radius(self):
+        # Coordinates in Paris, far from NYC
+        resp = self.client.get('/api/restaurants/nearby?latitude=48.8566&longitude=2.3522&radius=10')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(len(data['restaurants']), 0)
+        self.assertIn('No restaurants found within 10 km', data['message'])
+
+    def test_nearby_search_zero_active_restaurants(self):
+        for r in [self.r1, self.r2, self.r3, self.r4]:
+            r.is_active = False
+        db.session.commit()
+
+        resp = self.client.get('/api/restaurants/nearby?latitude=40.7128&longitude=-74.0060&radius=10')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(len(data['restaurants']), 0)
+        self.assertEqual(data['total_active'], 0)
+        self.assertIn('No active restaurants are currently available', data['message'])
+
+    def test_normal_listing_includes_restaurants_with_and_without_coords(self):
+        r_nocoords = Restaurant(name='R_NoCoords', email='rn2@test.com', owner_id=self.owner1.id,
+                                city='NYC', state='NY', latitude=None, longitude=None, is_active=True)
+        db.session.add(r_nocoords)
+        db.session.commit()
+
+        self.login('cust1@test.com')
+        resp = self.client.get('/customer/restaurants')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'R1', resp.data)
+        self.assertIn(b'R_NoCoords', resp.data)
+
+    def test_normal_listing_empty_state(self):
+        for r in [self.r1, self.r2, self.r3, self.r4]:
+            r.is_active = False
+        db.session.commit()
+
+        self.login('cust1@test.com')
+        resp = self.client.get('/customer/restaurants')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'No active restaurants are currently available on the platform', resp.data)
+
+        resp_filter = self.client.get('/customer/restaurants?city=NonExistentCity')
+        self.assertEqual(resp_filter.status_code, 200)
+        self.assertIn(b'No restaurants found matching your search criteria', resp_filter.data)
+
 if __name__ == '__main__':
     unittest.main()

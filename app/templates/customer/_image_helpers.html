@@ -1,0 +1,33 @@
+{% macro get_restaurant_cover(restaurant) -%}
+    {%- if restaurant.image -%}
+        {{ restaurant.image }}
+    {%- elif 'Spice' in restaurant.name or restaurant.id == 1 -%}
+        {{ url_for('static', filename='images/rest_spice_garden.jpg') }}
+    {%- elif 'Millet' in restaurant.name or restaurant.id == 2 -%}
+        {{ url_for('static', filename='images/rest_millet.jpg') }}
+    {%- elif 'Crave' in restaurant.name or 'Bistro' in restaurant.name or restaurant.id == 3 -%}
+        {{ url_for('static', filename='images/rest_bistro.jpg') }}
+    {%- elif 'Pepper' in restaurant.name or restaurant.id == 4 -%}
+        {{ url_for('static', filename='images/rest_pepper.jpg') }}
+    {%- elif 'Moonlight' in restaurant.name or 'Cafe' in restaurant.name or restaurant.id == 5 -%}
+        {{ url_for('static', filename='images/rest_cafe.jpg') }}
+    {%- else -%}
+        {{ url_for('static', filename='images/hero_dining.jpg') }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro get_item_image(item) -%}
+    {%- if item.image -%}
+        {{ item.image }}
+    {%- elif item.category and 'Breakfast' in item.category.name -%}
+        {{ url_for('static', filename='images/food_breakfast.jpg') }}
+    {%- elif item.category and 'Lunch' in item.category.name -%}
+        {{ url_for('static', filename='images/food_lunch.jpg') }}
+    {%- elif item.category and 'Snack' in item.category.name -%}
+        {{ url_for('static', filename='images/food_snacks.jpg') }}
+    {%- elif item.category and 'Beverage' in item.category.name -%}
+        {{ url_for('static', filename='images/food_beverages.jpg') }}
+    {%- else -%}
+        {{ url_for('static', filename='images/food_lunch.jpg') }}
+    {%- endif -%}
+{%- endmacro %}

@@ -80,13 +80,14 @@ class ReservationTestCase(unittest.TestCase):
             'end_time': '13:00',
             'number_of_guests': 2
         }, follow_redirects=True)
-        self.assertIn(b'Reservation created successfully', response.data)
+        self.assertIn(b'booked successfully', response.data)
         
         res = Reservation.query.first()
         self.assertIsNotNone(res)
         self.assertEqual(res.customer_id, self.customer.id)
         self.assertEqual(res.table_id, self.t1.id)
-        self.assertEqual(res.status, 'pending')
+        # Reservations are auto-confirmed, no owner approval needed
+        self.assertEqual(res.status, 'confirmed')
 
         # Check CustomerRestaurant creation
         cr = CustomerRestaurant.query.filter_by(customer_id=self.customer.id, restaurant_id=self.r1.id).first()
@@ -172,7 +173,7 @@ class ReservationTestCase(unittest.TestCase):
         }, follow_redirects=True)
         self.assertIn(b'already reserved for the selected time', response.data)
         
-        # Non-overlapping
+        # Non-overlapping should succeed
         response = self.client.post(f'/customer/restaurants/{self.r1.id}/reserve', data={
             'table_id': self.t1.id,
             'reservation_date': '2030-01-01',
@@ -180,7 +181,7 @@ class ReservationTestCase(unittest.TestCase):
             'end_time': '14:00',
             'number_of_guests': 2
         }, follow_redirects=True)
-        self.assertIn(b'Reservation created successfully', response.data)
+        self.assertIn(b'booked successfully', response.data)
 
         # Cancel the first one and book overlapping
         res1 = Reservation.query.first()
@@ -193,7 +194,7 @@ class ReservationTestCase(unittest.TestCase):
             'end_time': '13:00',
             'number_of_guests': 2
         }, follow_redirects=True)
-        self.assertIn(b'Reservation created successfully', response.data)
+        self.assertIn(b'booked successfully', response.data)
 
     def test_customer_isolation_and_cancellation(self):
         # Create res for customer 1
@@ -241,13 +242,20 @@ class ReservationTestCase(unittest.TestCase):
         response = self.client.get('/owner/reservations')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'12:00', response.data)
-        
-        # Confirm
+
+        # Reservation is already confirmed (auto-confirmed on creation)
+        # Directly set to pending to test owner-confirm path
+        db.session.refresh(res)
+        res.status = 'pending'
+        res.table.status = 'available'
+        db.session.commit()
+
+        # Confirm via owner
         response = self.client.post(f'/owner/reservations/{res.id}/confirm', follow_redirects=True)
         db.session.refresh(res)
         self.assertEqual(res.status, 'confirmed')
-        
-        # Complete
+
+        # Complete (checkout + release table)
         response = self.client.post(f'/owner/reservations/{res.id}/complete', follow_redirects=True)
         db.session.refresh(res)
         self.assertEqual(res.status, 'completed')

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response
 from flask_login import login_required, current_user
 from app.utils import role_required
 from app import db
@@ -9,8 +9,11 @@ from app.models.user import User
 from app.models.reservation import Reservation
 from app.models.order import Order, OrderItem
 from app.models.restaurant import CustomerRestaurant
+from app.services import reservation_service
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timedelta, date, timezone
+import csv
+import io
 
 owner_bp = Blueprint('owner', __name__)
 
@@ -43,8 +46,15 @@ def dashboard():
 
     # Orders
     orders = Order.query.filter_by(restaurant_id=restaurant.id).all()
+    def _is_today(dt):
+        if not dt:
+            return False
+        if dt.tzinfo is not None:
+            return dt.astimezone().date() == today
+        return dt.date() == today or (dt.replace(tzinfo=timezone.utc).astimezone().date() == today)
+
     order_stats = {
-        'today': sum(1 for o in orders if o.created_at.date() == today),
+        'today': sum(1 for o in orders if _is_today(o.created_at)),
         'pending': sum(1 for o in orders if o.status == 'placed'),
         'preparing': sum(1 for o in orders if o.status == 'preparing'),
         'ready': sum(1 for o in orders if o.status == 'ready'),
@@ -57,14 +67,20 @@ def dashboard():
     # Customers
     customer_count = CustomerRestaurant.query.filter_by(restaurant_id=restaurant.id).count()
 
+    recent_orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.created_at.desc()).limit(5).all()
+    recent_reservations = Reservation.query.filter_by(restaurant_id=restaurant.id).order_by(Reservation.reservation_date.desc(), Reservation.start_time.desc()).limit(5).all()
+
     return render_template(
         'owner/dashboard.html',
         restaurant=restaurant,
+        tables=tables,
         table_stats=table_stats,
         res_stats=res_stats,
         order_stats=order_stats,
         staff_count=staff_count,
-        customer_count=customer_count
+        customer_count=customer_count,
+        recent_orders=recent_orders,
+        recent_reservations=recent_reservations
     )
 
 @owner_bp.route('/restaurant')
@@ -580,11 +596,10 @@ def confirm_reservation(reservation_id):
     restaurant = get_owner_restaurant()
     if not restaurant:
         abort(403)
-        
+
     reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
     if reservation.status == 'pending':
-        reservation.status = 'confirmed'
-        db.session.commit()
+        reservation_service.confirm_reservation(reservation)
         flash('Reservation confirmed successfully.', 'success')
     else:
         flash('Only pending reservations can be confirmed.', 'error')
@@ -596,11 +611,10 @@ def cancel_reservation(reservation_id):
     restaurant = get_owner_restaurant()
     if not restaurant:
         abort(403)
-        
+
     reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
     if reservation.status in ['pending', 'confirmed']:
-        reservation.status = 'cancelled'
-        db.session.commit()
+        reservation_service.cancel_reservation(reservation)
         flash('Reservation cancelled successfully.', 'success')
     else:
         flash('Reservation cannot be cancelled.', 'error')
@@ -612,17 +626,65 @@ def complete_reservation(reservation_id):
     restaurant = get_owner_restaurant()
     if not restaurant:
         abort(403)
-        
+
     reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
     if reservation.status == 'confirmed':
-        reservation.status = 'completed'
-        db.session.commit()
-        flash('Reservation marked as completed.', 'success')
+        try:
+            reservation_service.checkout_reservation(reservation)
+            flash('Reservation marked as completed and table released.', 'success')
+        except ValueError as e:
+            flash(str(e), 'danger')
     else:
         flash('Only confirmed reservations can be marked as completed.', 'error')
     return redirect(url_for('owner.list_reservations'))
 
+
+@owner_bp.route('/reservations/<int:reservation_id>/checkin', methods=['POST'])
+@role_required('restaurant_owner')
+def checkin_reservation(reservation_id):
+    """Mark customer as physically seated — table becomes 'occupied'."""
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+
+    reservation = Reservation.query.filter_by(id=reservation_id, restaurant_id=restaurant.id).first_or_404()
+    if reservation.status == 'confirmed':
+        try:
+            reservation_service.checkin_reservation(reservation)
+            flash('Customer checked in — table marked as occupied.', 'success')
+        except ValueError as e:
+            flash(str(e), 'danger')
+    else:
+        flash('Only confirmed reservations can be checked in.', 'error')
+    return redirect(url_for('owner.list_reservations'))
+
 # --- Order Management ---
+
+@owner_bp.route('/kitchen')
+@role_required('restaurant_owner')
+def kitchen_display():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to access the kitchen display.", "warning")
+        return redirect(url_for('owner.dashboard'))
+
+    active_orders = Order.query.filter_by(restaurant_id=restaurant.id).filter(
+        Order.status.in_(['placed', 'confirmed', 'preparing', 'ready'])
+    ).order_by(Order.created_at.asc()).all()
+
+    placed_orders = [o for o in active_orders if o.status == 'placed']
+    confirmed_orders = [o for o in active_orders if o.status == 'confirmed']
+    preparing_orders = [o for o in active_orders if o.status == 'preparing']
+    ready_orders = [o for o in active_orders if o.status == 'ready']
+    now = datetime.now()
+
+    return render_template('owner/kitchen.html',
+                           restaurant=restaurant,
+                           placed_orders=placed_orders,
+                           confirmed_orders=confirmed_orders,
+                           preparing_orders=preparing_orders,
+                           ready_orders=ready_orders,
+                           now=now)
 
 @owner_bp.route('/orders')
 @role_required('restaurant_owner')
@@ -656,7 +718,7 @@ def update_order_status(order_id):
     new_status = request.form.get('status')
     
     valid_transitions = {
-        'placed': ['confirmed', 'cancelled'],
+        'placed': ['confirmed', 'preparing', 'cancelled'],
         'confirmed': ['preparing', 'cancelled'],
         'preparing': ['ready'],
         'ready': ['served'],
@@ -671,4 +733,250 @@ def update_order_status(order_id):
     else:
         flash(f"Invalid status transition from {order.status} to {new_status}.", "danger")
         
-    return redirect(url_for('owner.order_detail', order_id=order.id))
+    next_url = request.form.get('next')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect(request.referrer or url_for('owner.order_detail', order_id=order.id))
+
+@owner_bp.route('/orders/<int:order_id>/receipt')
+@role_required('restaurant_owner')
+def view_receipt(order_id):
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+    order = Order.query.filter_by(id=order_id, restaurant_id=restaurant.id).first_or_404()
+    return render_template('customer/receipt.html', order=order, is_internal=True)
+
+# --- Analytics and Reporting ---
+
+def _parse_date_range(req):
+    start_str = req.args.get('start_date')
+    end_str = req.args.get('end_date')
+    today = date.today()
+    default_start = today - timedelta(days=30)
+    
+    try:
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else default_start
+    except (ValueError, TypeError):
+        start_date = default_start
+        
+    try:
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else today
+    except (ValueError, TypeError):
+        end_date = today
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    return start_date, end_date
+
+@owner_bp.route('/reports')
+@role_required('restaurant_owner')
+def reports():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        flash("You must have an assigned restaurant to view reports.", "warning")
+        return redirect(url_for('owner.dashboard'))
+
+    start_date, end_date = _parse_date_range(request)
+    next_day = end_date + timedelta(days=1)
+
+    orders = Order.query.filter(
+        Order.restaurant_id == restaurant.id,
+        Order.created_at >= start_date,
+        Order.created_at < next_day
+    ).order_by(Order.created_at.desc()).all()
+
+    reservations = Reservation.query.filter(
+        Reservation.restaurant_id == restaurant.id,
+        Reservation.reservation_date >= start_date,
+        Reservation.reservation_date <= end_date
+    ).order_by(Reservation.reservation_date.desc(), Reservation.start_time.desc()).all()
+
+    total_sales = sum(o.total_amount for o in orders if o.status != 'cancelled')
+    orders_count = len(orders)
+    served_orders_count = sum(1 for o in orders if o.status == 'served')
+    cancelled_orders_count = sum(1 for o in orders if o.status == 'cancelled')
+    avg_order_value = (float(total_sales) / orders_count) if orders_count > 0 else 0.0
+
+    res_count = len(reservations)
+    confirmed_res_count = sum(1 for r in reservations if r.status == 'confirmed')
+    completed_res_count = sum(1 for r in reservations if r.status == 'completed')
+    cancelled_res_count = sum(1 for r in reservations if r.status == 'cancelled')
+
+    top_items_query = db.session.query(
+        MenuItem.name,
+        func.sum(OrderItem.quantity).label('qty_sold'),
+        func.sum(OrderItem.subtotal).label('revenue')
+    ).join(OrderItem, MenuItem.id == OrderItem.menu_item_id)\
+     .join(Order, OrderItem.order_id == Order.id)\
+     .filter(
+         Order.restaurant_id == restaurant.id,
+         Order.created_at >= start_date,
+         Order.created_at < next_day,
+         Order.status != 'cancelled'
+     ).group_by(MenuItem.name)\
+      .order_by(func.sum(OrderItem.quantity).desc())\
+      .limit(5).all()
+
+    all_tables = Table.query.filter_by(restaurant_id=restaurant.id).all()
+    occupied_count = sum(1 for t in all_tables if t.status == 'occupied')
+    reserved_count = sum(1 for t in all_tables if t.status == 'reserved')
+    available_count = sum(1 for t in all_tables if t.status == 'available')
+    utilization_rate = (occupied_count / len(all_tables) * 100) if all_tables else 0
+
+    return render_template('owner/reports.html',
+                           restaurant=restaurant,
+                           start_date=start_date.strftime('%Y-%m-%d'),
+                           end_date=end_date.strftime('%Y-%m-%d'),
+                           total_sales=total_sales,
+                           orders_count=orders_count,
+                           served_orders_count=served_orders_count,
+                           cancelled_orders_count=cancelled_orders_count,
+                           avg_order_value=avg_order_value,
+                           res_count=res_count,
+                           confirmed_res_count=confirmed_res_count,
+                           completed_res_count=completed_res_count,
+                           cancelled_res_count=cancelled_res_count,
+                           top_items=top_items_query,
+                           all_tables=all_tables,
+                           occupied_count=occupied_count,
+                           reserved_count=reserved_count,
+                           available_count=available_count,
+                           utilization_rate=utilization_rate,
+                           orders=orders[:20])
+
+def _safe_csv_val(val):
+    if val is None:
+        return ""
+    s = str(val)
+    if s and s[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
+
+@owner_bp.route('/reports/export/orders')
+@role_required('restaurant_owner')
+def export_orders_csv():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+
+    start_date, end_date = _parse_date_range(request)
+    next_day = end_date + timedelta(days=1)
+
+    orders = Order.query.filter(
+        Order.restaurant_id == restaurant.id,
+        Order.created_at >= start_date,
+        Order.created_at < next_day
+    ).order_by(Order.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Order ID', 'Date & Time', 'Customer Name', 'Customer Email', 'Table Number', 'Status', 'Items Count', 'Total Amount (INR)'])
+
+    for o in orders:
+        writer.writerow([
+            _safe_csv_val(o.id),
+            _safe_csv_val(o.created_at.strftime('%Y-%m-%d %H:%M:%S') if o.created_at else ''),
+            _safe_csv_val(o.customer.name if o.customer else ''),
+            _safe_csv_val(o.customer.email if o.customer else ''),
+            _safe_csv_val(o.table.table_number if o.table else 'N/A'),
+            _safe_csv_val(o.status.title()),
+            _safe_csv_val(len(o.items)),
+            _safe_csv_val(f"{float(o.total_amount):.2f}")
+        ])
+
+    filename = f"orders_{restaurant.id}_{start_date}_{end_date}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+@owner_bp.route('/reports/export/reservations')
+@role_required('restaurant_owner')
+def export_reservations_csv():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+
+    start_date, end_date = _parse_date_range(request)
+
+    reservations = Reservation.query.filter(
+        Reservation.restaurant_id == restaurant.id,
+        Reservation.reservation_date >= start_date,
+        Reservation.reservation_date <= end_date
+    ).order_by(Reservation.reservation_date.desc(), Reservation.start_time.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Reservation ID', 'Date', 'Start Time', 'End Time', 'Customer Name', 'Customer Email', 'Customer Phone', 'Table Number', 'Guests', 'Status'])
+
+    for r in reservations:
+        writer.writerow([
+            _safe_csv_val(r.id),
+            _safe_csv_val(r.reservation_date.strftime('%Y-%m-%d')),
+            _safe_csv_val(r.start_time.strftime('%H:%M')),
+            _safe_csv_val(r.end_time.strftime('%H:%M')),
+            _safe_csv_val(r.customer.name if r.customer else ''),
+            _safe_csv_val(r.customer.email if r.customer else ''),
+            _safe_csv_val(r.customer.phone if r.customer else ''),
+            _safe_csv_val(r.table.table_number if r.table else 'N/A'),
+            _safe_csv_val(r.number_of_guests),
+            _safe_csv_val(r.status.title())
+        ])
+
+    filename = f"reservations_{restaurant.id}_{start_date}_{end_date}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+@owner_bp.route('/reports/export/sales')
+@role_required('restaurant_owner')
+def export_sales_csv():
+    restaurant = get_owner_restaurant()
+    if not restaurant:
+        abort(403)
+
+    start_date, end_date = _parse_date_range(request)
+    next_day = end_date + timedelta(days=1)
+
+    top_items_query = db.session.query(
+        MenuItem.name,
+        MenuCategory.name.label('category_name'),
+        MenuItem.price,
+        func.sum(OrderItem.quantity).label('qty_sold'),
+        func.sum(OrderItem.subtotal).label('revenue')
+    ).join(OrderItem, MenuItem.id == OrderItem.menu_item_id)\
+     .join(Order, OrderItem.order_id == Order.id)\
+     .join(MenuCategory, MenuItem.category_id == MenuCategory.id)\
+     .filter(
+         Order.restaurant_id == restaurant.id,
+         Order.created_at >= start_date,
+         Order.created_at < next_day,
+         Order.status != 'cancelled'
+     ).group_by(MenuItem.name, MenuCategory.name, MenuItem.price)\
+      .order_by(func.sum(OrderItem.subtotal).desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Item Name', 'Category', 'Unit Price (INR)', 'Quantity Sold', 'Total Revenue (INR)'])
+
+    for row in top_items_query:
+        writer.writerow([
+            _safe_csv_val(row.name),
+            _safe_csv_val(row.category_name),
+            _safe_csv_val(f"{float(row.price):.2f}"),
+            _safe_csv_val(row.qty_sold),
+            _safe_csv_val(f"{float(row.revenue):.2f}")
+        ])
+
+    filename = f"sales_items_{restaurant.id}_{start_date}_{end_date}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+

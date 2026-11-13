@@ -1,0 +1,94 @@
+{# Shared KDS Order Card #}
+{% set update_url = url_for('owner.update_order_status', order_id=order.id) if current_user.role == 'restaurant_owner' else url_for('staff.update_order_status', order_id=order.id) %}
+{% set receipt_url = url_for('owner.view_receipt', order_id=order.id) if current_user.role == 'restaurant_owner' else url_for('staff.view_receipt', order_id=order.id) %}
+{% set detail_url = url_for('owner.order_detail', order_id=order.id) if current_user.role == 'restaurant_owner' else url_for('staff.order_detail', order_id=order.id) %}
+
+<div class="card border shadow-sm p-3 bg-white">
+    <!-- Header: Order ID, Table, and Time -->
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold fs-6 text-dark">#{{ order.id }}</span>
+                {% if order.table %}
+                    <span class="badge bg-dark text-warning">T{{ order.table.table_number }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">Takeaway</span>
+                {% endif %}
+            </div>
+            <div class="text-muted small">
+                {{ order.customer.name if order.customer else 'Guest' }}
+            </div>
+        </div>
+
+        <div class="text-end">
+            <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">
+                {{ order.created_at.strftime('%H:%M') if order.created_at else '' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Items list -->
+    <div class="py-2 border-top border-bottom my-1">
+        <ul class="list-unstyled mb-0 small">
+            {% for oi in order.items %}
+            <li class="d-flex justify-content-between align-items-center py-1">
+                <span>
+                    <strong class="text-primary me-1">{{ oi.quantity }}x</strong>
+                    {{ oi.menu_item.name if oi.menu_item else 'Item' }}
+                </span>
+                <span class="text-muted">₹{{ "%.0f"|format(oi.subtotal) }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Bottom summary & action -->
+    <div class="d-flex justify-content-between align-items-center mt-2 pt-1">
+        <span class="small fw-bold text-dark">Total: ₹{{ "%.2f"|format(order.total_amount) }}</span>
+        <a href="{{ receipt_url }}" class="small text-decoration-none text-muted" title="View Bill" target="_blank">
+            <i class="bi bi-receipt"></i> Bill
+        </a>
+    </div>
+
+    <!-- 1-Click State Advance Button -->
+    <div class="mt-2 pt-1">
+        {% if order.status == 'placed' %}
+            <form action="{{ update_url }}" method="POST" class="d-inline w-100">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="status" value="preparing">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">
+                    <i class="bi bi-fire me-1"></i>Start Cooking
+                </button>
+            </form>
+        {% elif order.status == 'confirmed' %}
+            <form action="{{ update_url }}" method="POST" class="d-inline w-100">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="status" value="preparing">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">
+                    <i class="bi bi-fire me-1"></i>Start Cooking
+                </button>
+            </form>
+        {% elif order.status == 'preparing' %}
+            <form action="{{ update_url }}" method="POST" class="d-inline w-100">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="status" value="ready">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-sm btn-success w-100 fw-bold">
+                    <i class="bi bi-check2-circle me-1"></i>Mark Ready
+                </button>
+            </form>
+        {% elif order.status == 'ready' %}
+            <form action="{{ update_url }}" method="POST" class="d-inline w-100">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="status" value="served">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">
+                    <i class="bi bi-hand-thumbs-up-fill me-1"></i>Mark Served
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+

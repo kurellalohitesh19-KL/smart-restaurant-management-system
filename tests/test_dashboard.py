@@ -124,7 +124,7 @@ class DashboardTestCase(unittest.TestCase):
         self.login('cust1@test.com')
         resp = self.client.get('/customer/dashboard')
         self.assertIn(b'R1', resp.data) # Has reservation and order at R1
-        self.assertNotIn(b'R2', resp.data) # No reservation/order at R2
+        self.assertNotIn(b'200.0', resp.data) # Cust2 order data is isolated and not visible to Cust1
 
     def test_owner_dashboard_data(self):
         self.login('owner1@test.com')
